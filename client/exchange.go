@@ -555,7 +555,6 @@ func (e *Exchange) processT3Messages() bool {
 func (e *Exchange) Run() {
 	defer e.log.Debug("Run was halted.")
 	haltedfn := func() {
-		panic("WTF")
 		e.updateChan <- ReunionUpdate{
 			ExchangeID: e.ExchangeID,
 			ContactID: e.contactID,
