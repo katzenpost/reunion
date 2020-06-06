@@ -563,19 +563,23 @@ func (e *Exchange) Run() {
 
 	switch e.status {
 	case initialState:
+		e.log.Debugf("exchange %v initialState", e.ExchangeID)
 		// XXX not required -> 1:A <- DB: fetch current epoch and current set of data for epoch state
 		// 2:A -> DB: transmit א message
 		if !e.sendT1() {
+			e.log.Debugf("exchange %v !sendT1", e.ExchangeID)
 			defer haltedfn()
 			return
 		}
 		e.status = t1MessageSentState
 		if !e.sentUpdateOK() {
+			e.log.Debugf("exchange %v !sentUpdateOK", e.ExchangeID)
 			defer haltedfn()
 			return
 		}
 		if e.shouldStop() {
 			e.log.Error(ErrShutdown.Error())
+			e.log.Debugf("exchange %v initialState shouldStop", e.ExchangeID)
 			defer haltedfn()
 			return
 		}
@@ -585,6 +589,7 @@ func (e *Exchange) Run() {
 			// 3:A <- DB: fetch epoch state
 			err := e.fetchState()
 			if err != nil {
+				e.log.Debugf("exchange %v fetchState failed", e.ExchangeID)
 				e.log.Error(err.Error())
 				defer haltedfn()
 				return
@@ -592,11 +597,13 @@ func (e *Exchange) Run() {
 			// 4:A -> DB: transmit one ב message for each א
 			e.sendT2Messages()
 			if !e.sentUpdateOK() {
+				e.log.Debugf("exchange %v !sentUpdateOK", e.ExchangeID)
 				defer haltedfn()
 				return
 			}
 			if e.shouldStop() {
 				e.log.Error(ErrShutdown.Error())
+				e.log.Debugf("exchange %v !sentUpdateOK", e.ExchangeID)
 				defer haltedfn()
 				return
 			}
@@ -606,18 +613,22 @@ func (e *Exchange) Run() {
 			e.sendT3Messages()
 
 			if !e.sentUpdateOK() {
+				e.log.Debugf("exchange %v t1MessageSentState !sentUpdateOK", e.ExchangeID)
 				defer haltedfn()
 				return
 			}
 			if e.shouldStop() {
+				e.log.Debugf("exchange %v t1MessageSentState shouldStop", e.ExchangeID)
 				e.log.Error(ErrShutdown.Error())
 				defer haltedfn()
 				return
 			}
 
 			if e.processT3Messages() {
+				e.log.Debugf("exchange %v t1MessageSentState processT3Messages OK", e.ExchangeID)
 				break
 			}
+			e.log.Debugf("exchange %v t1MessageSentState processT3Messages fail", e.ExchangeID)
 		} // end for loop
 	default:
 		e.updateChan <- ReunionUpdate{
