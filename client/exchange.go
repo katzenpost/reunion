@@ -553,7 +553,6 @@ func (e *Exchange) processT3Messages() bool {
 // state transition. This method is meant to run in it's own
 // goroutine.
 func (e *Exchange) Run() {
-	defer e.log.Debug("Run was halted.")
 	haltedfn := func() {
 		e.updateChan <- ReunionUpdate{
 			ExchangeID: e.ExchangeID,
@@ -628,6 +627,6 @@ func (e *Exchange) Run() {
 		}
 		return
 	}
-
-	// unreachable
+	e.log.Debug("Run was completed.")
+	// unreachable ??
 }
