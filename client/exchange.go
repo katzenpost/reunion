@@ -343,6 +343,7 @@ func (e *Exchange) sendT1() bool {
 	var err error
 	e.sentT1, err = e.session.GenerateType1Message(e.payload)
 	if err != nil {
+		panic(err)
 		e.log.Error(err.Error())
 		return false
 	}
@@ -352,11 +353,13 @@ func (e *Exchange) sendT1() bool {
 	}
 	rawResponse, err := e.db.Query(&t1Cmd)
 	if err != nil {
+		panic(err)
 		e.log.Error(err.Error())
 		return false
 	}
 	response, ok := rawResponse.(*commands.MessageResponse)
 	if !ok {
+		panic("InvalidResponseErrMessage")
 		e.log.Error(InvalidResponseErrMessage)
 		return false
 	}
@@ -389,11 +392,13 @@ func (e *Exchange) sendT2Messages() bool {
 		// decrypt alpha pub key and store it in our state
 		alpha, _, _, err := crypto.DecodeT1Message(t1)
 		if err != nil {
+			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
 		t2, alphaPubKey, err := e.session.ProcessType1MessageAlpha(alpha)
 		if err != nil {
+			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
