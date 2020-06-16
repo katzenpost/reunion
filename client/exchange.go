@@ -583,7 +583,6 @@ func (e *Exchange) Run() {
 		if !e.sendT1() {
 			e.log.Debugf("exchange %v !sendT1", e.ExchangeID)
 			defer haltedfn()
-			panic("not sent T1")
 			return
 		}
 		e.status = t1MessageSentState
