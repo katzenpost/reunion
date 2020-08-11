@@ -36,7 +36,7 @@ const (
 	ResponseStatusOK = 0
 
 	cmdOverhead           = 1
-	fetchStateLength      = cmdOverhead + 8 + 32
+	fetchStateLength      = cmdOverhead + 8 + 32 + 4
 	stateResponseLength   = cmdOverhead + 1 + 1 + 4 + crypto.PayloadSize
 	sendT1Length          = cmdOverhead + 8 + crypto.Type1MessageSize
 	sendT2Length          = cmdOverhead + 8 + 32 + 32 + crypto.Type2MessageSize
@@ -62,6 +62,8 @@ type Command interface {
 type FetchState struct {
 	// Epoch specifies the current Reunion epoch.
 	Epoch uint64
+	// Index indicates what chunk of the state the client is requesting.
+	Index uint32
 
 	// T1Hash is the hash of the T1 message which is linked with a set of received messages.
 	T1Hash [sha256.Size]byte
@@ -72,7 +74,8 @@ func (s *FetchState) ToBytes() []byte {
 	out := make([]byte, fetchStateLength)
 	out[0] = byte(fetchState)
 	binary.BigEndian.PutUint64(out[1:9], s.Epoch)
-	copy(out[9:], s.T1Hash[:])
+	binary.BigEndian.PutUint32(out[10:14], s.Index)
+	copy(out[14:], s.T1Hash[:])
 	return out
 }
 
@@ -82,8 +85,9 @@ func fetchStateFromBytes(b []byte) (Command, error) {
 	}
 	s := new(FetchState)
 	s.Epoch = binary.BigEndian.Uint64(b[1:9])
+	s.Index = binary.BigEndian.Uint32(b[10:14])
 	t1Hash := [sha256.Size]byte{}
-	copy(t1Hash[:], b[9:])
+	copy(t1Hash[:], b[14:])
 	s.T1Hash = t1Hash
 	return s, nil
 }

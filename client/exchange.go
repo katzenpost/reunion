@@ -309,24 +309,33 @@ func (e *Exchange) fetchState() error {
 	fetchStateCmd.Epoch = e.session.Epoch()
 	fetchStateCmd.T1Hash = t1HashAr
 
-	rawResponse, err := e.db.Query(fetchStateCmd)
-	if err != nil {
-		return err
-	}
-	response, ok := rawResponse.(*commands.StateResponse)
-	if !ok {
-		return errors.New("fetch state: wrong response command received")
-	}
-	if response.ErrorCode != commands.ResponseStatusOK {
-		return fmt.Errorf("fetch state: received an error status code from the reunion db: %d", response.ErrorCode)
+	payload := []byte{}
+	// XXX: start with index 0
+	fetchStateCmd.Index = 0
+	for {
+		rawResponse, err := e.db.Query(fetchStateCmd)
+		if err != nil {
+			return err
+		}
+		response, ok := rawResponse.(*commands.StateResponse)
+		if !ok {
+			return errors.New("fetch state: wrong response command received")
+		}
+		if response.ErrorCode != commands.ResponseStatusOK {
+			return fmt.Errorf("fetch state: received an error status code from the reunion db: %d", response.ErrorCode)
+		}
+
+		payload = append(payload, response.Payload...)
+		if response.Truncated {
+			fetchStateCmd.Index++
+			continue
+		}
+		break
 	}
 	state := new(server.RequestedReunionState)
-	err = state.Unmarshal(response.Payload)
+	err := state.Unmarshal(payload)
 	if err != nil {
 		return err
-	}
-	if response.Truncated {
-		return errors.New("truncated Reunion DB state not yet supported")
 	}
 	_, err = e.processState(state)
 	return err

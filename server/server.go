@@ -20,12 +20,14 @@ package server
 import (
 	"errors"
 	"sync"
+	"fmt"
 	"sync/atomic"
 	"time"
 
 	"github.com/katzenpost/core/log"
 	"github.com/katzenpost/core/worker"
 	"github.com/katzenpost/reunion/commands"
+	"github.com/katzenpost/reunion/crypto"
 	"github.com/katzenpost/reunion/epochtime"
 	"gopkg.in/op/go-logging.v1"
 )
@@ -122,17 +124,47 @@ func (s *Server) fetchState(fetchCmd *commands.FetchState) (*commands.StateRespo
 	if err != nil {
 		return nil, err
 	}
+	// send only messages corresponding to the set requested
+	// XXX
+	if crypto.Type2MessageSize != crypto.Type3MessageSize {
+		panic(errors.New("chunked response size calculation wrong!"))
+	}
+	chunk_size := crypto.PayloadSize / crypto.Type2MessageSize
+
+	last_chunk := (len(t2t3messages) * crypto.Type2MessageSize) / crypto.PayloadSize
+	if len(t2t3messages) / chunk_size > 1 && len(t2t3messages) % chunk_size > 0 {
+		last_chunk++
+	}
+
+	idx := int(fetchCmd.Index)
+	first := idx*chunk_size
+	last := first + chunk_size
+	if last > len(t2t3messages) {
+		last = len(t2t3messages)
+	}
+
+	if int(fetchCmd.Index) > last_chunk {
+		// XXX: out of range...
+		panic(errors.New("fetchCmd.Index too large"))
+	}
 	requested := &RequestedReunionState{
 		T1Map:    t1Map,
-		Messages: t2t3messages,
+		Messages: t2t3messages[first:last], // XXX: does autotruncate on last_chunk?
 	}
+	// XXX: why does this serialize to such a large size?
 	serialized, err := requested.Marshal()
 	if err != nil {
 		return nil, err
 	}
+	if len(serialized) > 5000 {
+		// XXX
+		// need to split the messages and indicate that there
+		// is more than one message to be requested
+		panic(fmt.Errorf("serialized length too long: %d, %d", len(serialized), 1+1+4+crypto.PayloadSize))
+	}
 	response := &commands.StateResponse{
 		ErrorCode:          commands.ResponseStatusOK,
-		Truncated:          false,
+		Truncated:          idx < last_chunk,
 		LeftOverChunksHint: 0,
 		Payload:            serialized,
 	}
