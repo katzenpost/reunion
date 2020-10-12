@@ -343,7 +343,6 @@ func (e *Exchange) sendT1() bool {
 	var err error
 	e.sentT1, err = e.session.GenerateType1Message(e.payload)
 	if err != nil {
-		panic(err)
 		e.log.Error(err.Error())
 		return false
 	}
@@ -353,13 +352,11 @@ func (e *Exchange) sendT1() bool {
 	}
 	rawResponse, err := e.db.Query(&t1Cmd)
 	if err != nil {
-		panic(err)
 		e.log.Error(err.Error())
 		return false
 	}
 	response, ok := rawResponse.(*commands.MessageResponse)
 	if !ok {
-		panic("InvalidResponseErrMessage")
 		e.log.Error(InvalidResponseErrMessage)
 		return false
 	}
@@ -392,13 +389,11 @@ func (e *Exchange) sendT2Messages() bool {
 		// decrypt alpha pub key and store it in our state
 		alpha, _, _, err := crypto.DecodeT1Message(t1)
 		if err != nil {
-			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
 		t2, alphaPubKey, err := e.session.ProcessType1MessageAlpha(alpha)
 		if err != nil {
-			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
@@ -466,18 +461,15 @@ func (e *Exchange) sendT3Messages() bool {
 		}
 		alphaKey, ok := e.receivedT1Alphas[srcT1Hash]
 		if !ok {
-			panic(errors.New("no received T1Alpha"))
 			return false
 		}
 		candidateKey, err := e.session.GetCandidateKey(t2, alphaKey)
 		if err != nil {
-			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
 		_, t1beta, _, err := crypto.DecodeT1Message(t1)
 		if err != nil {
-			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
@@ -488,7 +480,6 @@ func (e *Exchange) sendT3Messages() bool {
 		}
 		t3, err := e.session.ComposeType3Message(beta)
 		if err != nil {
-			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
@@ -500,7 +491,6 @@ func (e *Exchange) sendT3Messages() bool {
 		}
 		rawResponse, err := e.db.Query(&sendT3Cmd)
 		if err != nil {
-			panic(err)
 			e.log.Error(err.Error())
 			return false
 		}
@@ -511,7 +501,6 @@ func (e *Exchange) sendT3Messages() bool {
 		}
 		if response.ErrorCode != commands.ResponseStatusOK {
 			e.log.Errorf("received an error status code from the reunion db: %d", response.ErrorCode)
-			panic("blah")
 			return false
 		}
 
@@ -534,19 +523,16 @@ func (e *Exchange) processT3Messages() bool {
 		t1, ok := e.receivedT1s[srcT1Hash]
 		if !ok {
 			e.log.Error("error, t1 missing from map")
-			panic("blah")
 			return false
 		}
 		_, _, gamma, err := crypto.DecodeT1Message(t1)
 		if err != nil {
-			panic(err)
 			e.log.Debug("decode t1 message failure")
 			e.log.Error(err.Error())
 			return false
 		}
 		plaintext, err := e.session.ProcessType3Message(t3, gamma, beta)
 		if err != nil {
-			panic(err)
 			e.log.Errorf("ProcessType3Message failure: %s", err.Error())
 			return false
 		}
@@ -589,14 +575,12 @@ func (e *Exchange) Run() {
 		if !e.sentUpdateOK() {
 			e.log.Debugf("exchange %v !sentUpdateOK", e.ExchangeID)
 			defer haltedfn()
-			panic("not sent update ok")
 			return
 		}
 		if e.shouldStop() {
 			e.log.Error(ErrShutdown.Error())
 			e.log.Debugf("exchange %v initialState shouldStop", e.ExchangeID)
 			defer haltedfn()
-			panic("shouldStop")
 			return
 		}
 		fallthrough
@@ -606,7 +590,6 @@ func (e *Exchange) Run() {
 			err := e.fetchState()
 			if err != nil {
 				e.log.Debugf("exchange %v fetchState failed", e.ExchangeID)
-				panic(err)
 				e.log.Error(err.Error())
 				defer haltedfn()
 				return
@@ -616,13 +599,11 @@ func (e *Exchange) Run() {
 			if !e.sentUpdateOK() {
 				e.log.Debugf("exchange %v !sentUpdateOK", e.ExchangeID)
 				defer haltedfn()
-				panic("not sent update ok")
 				return
 			}
 			if e.shouldStop() {
 				e.log.Error(ErrShutdown.Error())
 				e.log.Debugf("exchange %v !sentUpdateOK", e.ExchangeID)
-				panic("not sent update ok")
 				defer haltedfn()
 				return
 			}
@@ -633,13 +614,11 @@ func (e *Exchange) Run() {
 
 			if !e.sentUpdateOK() {
 				e.log.Debugf("exchange %v t1MessageSentState !sentUpdateOK", e.ExchangeID)
-				panic("not sent update ok")
 				defer haltedfn()
 				return
 			}
 			if e.shouldStop() {
 				e.log.Debugf("exchange %v t1MessageSentState shouldStop", e.ExchangeID)
-				panic("shouldStop")
 				e.log.Error(ErrShutdown.Error())
 				defer haltedfn()
 				return

@@ -66,17 +66,14 @@ type Session struct {
 func NewSessionFromKey(sharedEpochKey *[SharedEpochKeySize]byte, sharedRandomValue []byte, epoch uint64) (*Session, error) {
 	keypair1, err := NewKeypair(true)
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	keypair2, err := NewKeypair(false)
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	sk1, err := memguard.NewBufferFromReader(rand.Reader, 32)
 	if err != nil {
-		panic(err)
 		memguard.SafePanic(err)
 	}
 	sk2, err := memguard.NewBufferFromReader(rand.Reader, 32)
@@ -135,7 +132,6 @@ func (c *Session) GenerateType1Message(payload []byte) ([]byte, error) {
 	keypair1ElligatorPub := c.keypair1.Representative().Bytes()
 	k1, _, err := deriveSprpKey(type1Message, c.sharedRandomValue, c.epoch, c.sharedEpochKey.Bytes())
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	iv := [SPRPIVLength]byte{}
@@ -143,13 +139,11 @@ func (c *Session) GenerateType1Message(payload []byte) ([]byte, error) {
 
 	beta, err := newT1Beta(c.keypair2.Public().Bytes(), c.sessionKey1.ByteArray32())
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
 	gamma, err := newT1Gamma(payload[:], c.sessionKey2.ByteArray32())
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -165,7 +159,6 @@ func (c *Session) ProcessType1MessageAlpha(alpha []byte) ([]byte, *PublicKey, er
 
 	k1, _, err := deriveSprpKey(type1Message, c.sharedRandomValue, c.epoch, c.sharedEpochKey.Bytes())
 	if err != nil {
-		panic(err)
 		return nil, nil, err
 	}
 
@@ -180,7 +173,6 @@ func (c *Session) ProcessType1MessageAlpha(alpha []byte) ([]byte, *PublicKey, er
 	// T2 message construction:
 	k2Outer, hkdfContext, err := deriveSprpKey(type2Message, c.sharedRandomValue, c.epoch, c.sharedEpochKey.Bytes())
 	if err != nil {
-		panic(err)
 		return nil, nil, err
 	}
 
@@ -194,7 +186,6 @@ func (c *Session) ProcessType1MessageAlpha(alpha []byte) ([]byte, *PublicKey, er
 	k2Inner := [SPRPKeyLength]byte{}
 	_, err = kdfReader.Read(k2Inner[:])
 	if err != nil {
-		panic(err)
 		return nil, nil, err
 	}
 
@@ -209,7 +200,6 @@ func (c *Session) ProcessType1MessageAlpha(alpha []byte) ([]byte, *PublicKey, er
 func (c *Session) GetCandidateKey(t2 []byte, alpha *PublicKey) ([]byte, error) {
 	k3Outer, hkdfContext, err := deriveSprpKey(type2Message, c.sharedRandomValue, c.epoch, c.sharedEpochKey.Bytes())
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -225,7 +215,6 @@ func (c *Session) GetCandidateKey(t2 []byte, alpha *PublicKey) ([]byte, error) {
 	k3Inner := [SPRPKeyLength]byte{}
 	_, err = kdfReader.Read(k3Inner[:])
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -239,7 +228,6 @@ func (c *Session) GetCandidateKey(t2 []byte, alpha *PublicKey) ([]byte, error) {
 func (c *Session) ComposeType3Message(beta2 *PublicKey) ([]byte, error) {
 	k3Outer, hkdfContext, err := deriveSprpKey(type3Message, c.sharedRandomValue, c.epoch, c.sharedEpochKey.Bytes())
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -252,7 +240,6 @@ func (c *Session) ComposeType3Message(beta2 *PublicKey) ([]byte, error) {
 	k3Inner := [SPRPKeyLength]byte{}
 	_, err = kdfReader.Read(k3Inner[:])
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -266,7 +253,6 @@ func (c *Session) ComposeType3Message(beta2 *PublicKey) ([]byte, error) {
 func (c *Session) ProcessType3Message(t3, gamma []byte, beta2 *PublicKey) ([]byte, error) {
 	k3Outer, hkdfContext, err := deriveSprpKey(type3Message, c.sharedRandomValue, c.epoch, c.sharedEpochKey.Bytes())
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -279,7 +265,6 @@ func (c *Session) ProcessType3Message(t3, gamma []byte, beta2 *PublicKey) ([]byt
 	k3Inner := [SPRPKeyLength]byte{}
 	_, err = kdfReader.Read(k3Inner[:])
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
@@ -289,7 +274,6 @@ func (c *Session) ProcessType3Message(t3, gamma []byte, beta2 *PublicKey) ([]byt
 
 	payload, err := decryptT1Gamma(gammaKey, gamma)
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	return payload, nil
@@ -316,7 +300,6 @@ func (c *Session) UnmarshalBinary(data []byte) error {
 	cc := new(serializableSession)
 	err := codec.NewDecoderBytes(data, cborHandle).Decode(cc)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	c.epoch = cc.Epoch
