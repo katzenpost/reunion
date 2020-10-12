@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/katzenpost/client"
 	"github.com/katzenpost/reunion/commands"
 	"github.com/katzenpost/reunion/crypto"
 	"github.com/katzenpost/reunion/server"
@@ -588,6 +589,10 @@ func (e *Exchange) Run() {
 		for {
 			// 3:A <- DB: fetch epoch state
 			err := e.fetchState()
+			// if failure due to timeout, retransmit
+			if err == client.ErrReplyTimeout {
+				continue
+			}
 			if err != nil {
 				e.log.Debugf("exchange %v fetchState failed", e.ExchangeID)
 				e.log.Error(err.Error())
