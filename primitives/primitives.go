@@ -11,6 +11,7 @@ import (
 	"hash"
 
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/hkdf"
 
 	hpqchash "github.com/katzenpost/hpqc/hash"
@@ -20,21 +21,9 @@ func Hash(b []byte) [32]byte {
 	return hpqchash.Sum256(b)
 }
 
-
-// TODO argon2i
-/*
-def argon2i(password: bytes, salt: bytes, _wipe: bool=False):
-    return monocypher.argon2i_32(
-        nb_blocks=100000,
-        nb_iterations=3,
-        password=password,
-        salt=salt,
-        key=None,
-        ad=None,
-        _wipe=_wipe,
-    )
-*/
-
+func Argon2(password, salt []byte) []byte {
+	return argon2.Key(password, salt, 3, 100000, 1, 32)
+}
 
 func HKDF(ikm, salt []byte) []byte {
 	h := func() hash.Hash {

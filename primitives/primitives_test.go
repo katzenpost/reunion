@@ -57,7 +57,9 @@ aead_key = bytes.fromhex('2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a75
 aead_msg = bytes.fromhex('5245554e494f4e20697320666f722052656e64657a766f7573')
 aead_ad = bytes.fromhex('e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6ec7c98a3ed65327cf')
 aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b')
-*/
+
+
+/*
 	aeadKey, err := hex.DecodeString("2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a")
 	require.NoError(t, err)
 	aeadMesg, err := hex.DecodeString("5245554e494f4e20697320666f722052656e64657a766f7573")
@@ -70,7 +72,8 @@ aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
 	require.Equal(t, actualCt, aeadCt)
 
-
+*/
+	
 /*
 esk_a_seed = bytes.fromhex('e60498784e625a21d6285ee7a6144a0464dab10120b11f3794dd00e36da98c27')
 esk_a = bytes.fromhex('f988f98f466ff8585598ad12956b385e6090e9fdfdac3ca17c77cad61ac8a430')
@@ -132,4 +135,19 @@ pk_b = bytes.fromhex('6d4d5132efddd1ccfdb42178d5cab993617b50a43e24a0b6679e0d6f17
 	ss1 := s.DeriveSecret(privKeyA, pubKey1)
 	ss2 := s.DeriveSecret(privKeyB, pubKey2)
 	require.Equal(t, ss1, ss2)
+
+
+	/*
+argon2i_salt: bytes = DEFAULT_ARGON_SALT
+argon2i_password: bytes = bytes(b'REUNION is for rendezvous')
+argon2i_hash: bytes = bytes.fromhex('131f782cae57faa5055277621aec7c3984fbef048c8d183848f3def2697c7acd')
+	*/
+
+	argon2Password := []byte("REUNION is for rendezvous")
+	argon2Salt := make([]byte, 32)
+	require.NoError(t, err)
+	argon2ExpectedResult, err := hex.DecodeString("131f782cae57faa5055277621aec7c3984fbef048c8d183848f3def2697c7acd")
+	require.NoError(t, err)
+	argon2Result := Argon2(argon2Password, argon2Salt)
+	require.Equal(t, argon2Result, argon2ExpectedResult)
 }
