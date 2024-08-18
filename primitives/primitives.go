@@ -79,7 +79,7 @@ func AeadEcbDecrypt(key, mesg *[KeySize]byte) []byte {
 const aeadMacSize = 16
 
 func AeadEncrypt(key, mesg, ad []byte) []byte {
-	nonce := make([]byte, 32)	
+	nonce := make([]byte, 24)	
 	mac, ciphertext, _ := AeadLock(mesg, nonce, key, ad)
 	return append(mac, ciphertext...)
 }
