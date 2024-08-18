@@ -48,4 +48,33 @@ prp_ct = bytes.fromhex('a74b26c607e56b1f59a84d91ff738e6b55f94ceedc418118347c2b73
 	copy(block[:], ciphertext)
 	plaintext := AeadEcbDecrypt(keyArr, block)
 	require.Equal(t, plaintext[:], mesg[:])
+
+
+/*
+    def test_aead_encrypt(self):
+        _aead_ct = aead_encrypt(aead_key, aead_msg, aead_ad)
+        self.assertEqual(aead_ct, _aead_ct)
+
+    def test_aead_decrypt(self):
+        _aead_ct = aead_encrypt(aead_key, aead_msg, aead_ad)
+        _aead_pt = aead_decrypt(aead_key, aead_ct, aead_ad)
+        self.assertEqual(aead_msg, _aead_pt)
+
+aead_key = bytes.fromhex('2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a')
+aead_msg = bytes.fromhex('5245554e494f4e20697320666f722052656e64657a766f7573')
+aead_ad = bytes.fromhex('e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6ec7c98a3ed65327cf')
+aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b')
+
+*/
+	aeadKey, err := hex.DecodeString("2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a")
+	require.NoError(t, err)
+	aeadMesg, err := hex.DecodeString("5245554e494f4e20697320666f722052656e64657a766f7573")
+	require.NoError(t, err)
+	aeadAd, err := hex.DecodeString("e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6ec7c98a3ed65327cf")
+	require.NoError(t, err)
+	aeadCt, err := hex.DecodeString("a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b")
+	require.NoError(t, err)
+
+	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
+	require.Equal(t, actualCt, aeadCt)
 }

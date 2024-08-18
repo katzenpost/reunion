@@ -56,7 +56,7 @@ func AeadLock(plaintext, nonce, key, addData []byte) (mac, ciphertext, data []by
 	CMac := (*C.uint8_t)(unsafe.Pointer(C.CBytes(make([]uint8, 16))))
 	defer C.free(unsafe.Pointer(CMac))
 	CCipher := (*C.uint8_t)(unsafe.Pointer(C.CBytes(make([]uint8, len(plaintext)))))
-	defer C.free(unsafe.Pointer(CCipher))
+	//defer C.free(unsafe.Pointer(CCipher))
 	//	C Method call
 	C.crypto_aead_lock(CMac, CCipher, CKey, CNonce, CAdData, CAdDataSize, CPlain, CTextSize)
 	// Converting CTypes back to Go

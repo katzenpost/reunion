@@ -76,6 +76,20 @@ func AeadEcbDecrypt(key, mesg *[KeySize]byte) []byte {
 	return decrypted
 }
 
+const aeadMacSize = 16
+
+func AeadEncrypt(key, mesg, ad []byte) []byte {
+	nonce := make([]byte, 32)	
+	mac, ciphertext, _ := AeadLock(mesg, nonce, key, ad)
+	return append(mac, ciphertext...)
+}
+
+func AeadDecrypt(key, mesg, ad []byte) []byte {
+	nonce := make([]byte, 32)
+	mac, ct := mesg[aeadMacSize:], mesg[:aeadMacSize]
+	return AeadUnlock(ct, nonce, key, mac, ad)
+}
+
 
 func Unelligator(hidden []byte) []byte {
 	curve := make([]byte, KeySize)
