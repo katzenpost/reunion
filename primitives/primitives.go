@@ -86,7 +86,8 @@ func AeadEncrypt(key, mesg, ad []byte) []byte {
 
 func AeadDecrypt(key, mesg, ad []byte) []byte {
 	nonce := make([]byte, 32)
-	mac, ct := mesg[aeadMacSize:], mesg[:aeadMacSize]
+	mac := mesg[:aeadMacSize]
+	ct := mesg[aeadMacSize:]
 	return AeadUnlock(ct, nonce, key, mac, ad)
 }
 

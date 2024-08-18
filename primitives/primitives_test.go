@@ -68,7 +68,7 @@ aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6
 	require.NoError(t, err)
 
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
-	require.NotEqual(t, actualCt, aeadCt)
+	require.Equal(t, actualCt, aeadCt)
 
 
 /*

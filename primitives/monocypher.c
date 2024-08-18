@@ -2929,7 +2929,7 @@ int crypto_aead_read(crypto_aead_ctx *ctx, u8 *plain_text, const u8 mac[16],
 }
 
 void crypto_aead_lock(u8 *cipher_text, u8 mac[16], const u8 key[32],
-                      const u8  nonce[24], const u8 *ad, size_t ad_size,
+                      const u8  nonce[32], const u8 *ad, size_t ad_size,
                       const u8 *plain_text, size_t text_size)
 {
 	crypto_aead_ctx ctx;

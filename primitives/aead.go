@@ -51,7 +51,7 @@ func AeadLock(plaintext, nonce, key, addData []byte) (mac, ciphertext, data []by
 	defer C.free(unsafe.Pointer(CPlain))
 	CKey := (*C.uint8_t)(unsafe.Pointer(C.CBytes([]uint8(key[:32]))))
 	defer C.free(unsafe.Pointer(CKey))
-	CNonce := (*C.uint8_t)(unsafe.Pointer(C.CBytes([]uint8(nonce[:24]))))
+	CNonce := (*C.uint8_t)(unsafe.Pointer(C.CBytes([]uint8(nonce[:32]))))
 	defer C.free(unsafe.Pointer(CNonce))
 	CMac := (*C.uint8_t)(unsafe.Pointer(C.CBytes(make([]uint8, 16))))
 	defer C.free(unsafe.Pointer(CMac))
