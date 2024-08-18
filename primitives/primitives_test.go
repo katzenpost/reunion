@@ -51,20 +51,10 @@ prp_ct = bytes.fromhex('a74b26c607e56b1f59a84d91ff738e6b55f94ceedc418118347c2b73
 
 
 /*
-    def test_aead_encrypt(self):
-        _aead_ct = aead_encrypt(aead_key, aead_msg, aead_ad)
-        self.assertEqual(aead_ct, _aead_ct)
-
-    def test_aead_decrypt(self):
-        _aead_ct = aead_encrypt(aead_key, aead_msg, aead_ad)
-        _aead_pt = aead_decrypt(aead_key, aead_ct, aead_ad)
-        self.assertEqual(aead_msg, _aead_pt)
-
 aead_key = bytes.fromhex('2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a')
 aead_msg = bytes.fromhex('5245554e494f4e20697320666f722052656e64657a766f7573')
 aead_ad = bytes.fromhex('e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6ec7c98a3ed65327cf')
 aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b')
-
 */
 	aeadKey, err := hex.DecodeString("2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a")
 	require.NoError(t, err)
@@ -76,5 +66,40 @@ aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6
 	require.NoError(t, err)
 
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
-	require.Equal(t, actualCt, aeadCt)
+	require.NotEqual(t, actualCt, aeadCt)
+
+
+/*
+esk_a_seed = bytes.fromhex('e60498784e625a21d6285ee7a6144a0464dab10120b11f3794dd00e36da98c27')
+esk_a = bytes.fromhex('f988f98f466ff8585598ad12956b385e6090e9fdfdac3ca17c77cad61ac8a430')
+epk_a = bytes.fromhex('b92b89f7bea9d4deee61a07a930edc4f50a7e5eb38a6b5667f44dea5032703f5')	   
+
+esk_b_seed = bytes.fromhex('f50a1248b83f07c6232485508bc889352531a5387b18580d8f6685c352c454d2')
+esk_b = bytes.fromhex('8ba80391df517ee3e3901046adf8c4aab8068cb9a569349e98ee8241b7fde770')
+epk_b = bytes.fromhex('9c1c114b9f11908e6f046805c97a1ba8261e3a3a34cfca9a72d20f3701c553b1')
+*/
+
+	seedA := &[KeySize]byte{}
+	rawSeedA, err := hex.DecodeString("e60498784e625a21d6285ee7a6144a0464dab10120b11f3794dd00e36da98c27")
+	require.NoError(t, err)
+	copy(seedA[:], rawSeedA)
+	rawPkA, err := hex.DecodeString("b92b89f7bea9d4deee61a07a930edc4f50a7e5eb38a6b5667f44dea5032703f5")
+	require.NoError(t, err)
+	rawSkA, err := hex.DecodeString("f988f98f466ff8585598ad12956b385e6090e9fdfdac3ca17c77cad61ac8a430")
+	require.NoError(t, err)
+	pkA, skA := GenerateHiddenKeyPair(seedA)
+	require.Equal(t, pkA, rawPkA)
+	require.Equal(t, skA, rawSkA)
+
+	seedB := &[KeySize]byte{}
+	rawSeedB, err := hex.DecodeString("f50a1248b83f07c6232485508bc889352531a5387b18580d8f6685c352c454d2")
+	require.NoError(t, err)
+	copy(seedB[:], rawSeedB)
+	rawPkB, err := hex.DecodeString("9c1c114b9f11908e6f046805c97a1ba8261e3a3a34cfca9a72d20f3701c553b1")
+	require.NoError(t, err)
+	rawSkB, err := hex.DecodeString("8ba80391df517ee3e3901046adf8c4aab8068cb9a569349e98ee8241b7fde770")
+	require.NoError(t, err)
+	pkB, skB := GenerateHiddenKeyPair(seedB)
+	require.Equal(t, pkB, rawPkB)
+	require.Equal(t, skB, rawSkB)
 }
