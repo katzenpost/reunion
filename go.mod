@@ -9,7 +9,12 @@ require (
 )
 
 require (
+	codeberg.org/vula/highctidh v1.0.2024053000 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/henrydcase/nobs v0.0.0-20230313231516-25b66236df73 // indirect
+	github.com/katzenpost/chacha20 v0.0.0-20190910113340-7ce890d6a556 // indirect
+	github.com/katzenpost/circl v1.3.9-0.20240222183521-1cd9a34e9a0c // indirect
+	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

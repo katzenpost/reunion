@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/katzenpost/hpqc/nike/schemes"
 )
 
 
@@ -72,13 +74,13 @@ aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6
 /*
 esk_a_seed = bytes.fromhex('e60498784e625a21d6285ee7a6144a0464dab10120b11f3794dd00e36da98c27')
 esk_a = bytes.fromhex('f988f98f466ff8585598ad12956b385e6090e9fdfdac3ca17c77cad61ac8a430')
-epk_a = bytes.fromhex('b92b89f7bea9d4deee61a07a930edc4f50a7e5eb38a6b5667f44dea5032703f5')	   
-
+epk_a = bytes.fromhex('b92b89f7bea9d4deee61a07a930edc4f50a7e5eb38a6b5667f44dea5032703f5')
+pk_a = bytes.fromhex('95fa3b2a70e42f4dc66117a02680ddfe45a55451654e7bd685ba2a4179289104')
 esk_b_seed = bytes.fromhex('f50a1248b83f07c6232485508bc889352531a5387b18580d8f6685c352c454d2')
 esk_b = bytes.fromhex('8ba80391df517ee3e3901046adf8c4aab8068cb9a569349e98ee8241b7fde770')
 epk_b = bytes.fromhex('9c1c114b9f11908e6f046805c97a1ba8261e3a3a34cfca9a72d20f3701c553b1')
+pk_b = bytes.fromhex('6d4d5132efddd1ccfdb42178d5cab993617b50a43e24a0b6679e0d6f17ddae1e')
 */
-
 	seedA := &[KeySize]byte{}
 	rawSeedA, err := hex.DecodeString("e60498784e625a21d6285ee7a6144a0464dab10120b11f3794dd00e36da98c27")
 	require.NoError(t, err)
@@ -102,4 +104,32 @@ epk_b = bytes.fromhex('9c1c114b9f11908e6f046805c97a1ba8261e3a3a34cfca9a72d20f370
 	pkB, skB := GenerateHiddenKeyPair(seedB)
 	require.Equal(t, pkB, rawPkB)
 	require.Equal(t, skB, rawSkB)
+
+	curveA := Unelligator(pkA)
+	expectedCurveA, err := hex.DecodeString("95fa3b2a70e42f4dc66117a02680ddfe45a55451654e7bd685ba2a4179289104")
+	require.NoError(t, err)
+	require.Equal(t, expectedCurveA, curveA)
+
+	curveB := Unelligator(pkB)
+	expectedCurveB, err := hex.DecodeString("6d4d5132efddd1ccfdb42178d5cab993617b50a43e24a0b6679e0d6f17ddae1e")
+	require.NoError(t, err)
+	require.Equal(t, expectedCurveB, curveB)
+
+	// test elligator DH
+	s := schemes.ByName("X25519")
+	pubKey1, err := s.UnmarshalBinaryPublicKey(curveB)
+	require.NoError(t, err)
+
+	pubKey2, err := s.UnmarshalBinaryPublicKey(curveA)
+	require.NoError(t, err)
+
+	privKeyA, err := s.UnmarshalBinaryPrivateKey(skA)
+	require.NoError(t, err)
+
+	privKeyB, err := s.UnmarshalBinaryPrivateKey(skB)
+	require.NoError(t, err)
+
+	ss1 := s.DeriveSecret(privKeyA, pubKey1)
+	ss2 := s.DeriveSecret(privKeyB, pubKey2)
+	require.Equal(t, ss1, ss2)
 }

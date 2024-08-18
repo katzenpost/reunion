@@ -90,7 +90,6 @@ func AeadDecrypt(key, mesg, ad []byte) []byte {
 	return AeadUnlock(ct, nonce, key, mac, ad)
 }
 
-
 func Unelligator(hidden []byte) []byte {
 	curve := make([]byte, KeySize)
 	C.crypto_elligator_map((*C.uint8_t)(unsafe.Pointer(&curve[0])), (*C.uint8_t)(unsafe.Pointer(&hidden[0])))
