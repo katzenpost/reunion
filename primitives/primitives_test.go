@@ -14,14 +14,13 @@ import (
 
 
 func TestPrimitivesWithVectors(t *testing.T) {
-	// Hash vectors missing in the python ref implemention
-	expectedOut, err := hex.DecodeString("4d15588c33aa290cbcb755ac9ff8ee1fa33fd56d8b47f1c050cf9b9bc59cc201")
+	// blake2b
+	hashIn := []byte("REUNION is for rendezvous")
+	expectedHashOut, err := hex.DecodeString("1ffb4f05cb3e841d44079afbcc51f62edbd7092294edac59846b8519f48c5a45")
 	require.NoError(t, err)
-	in, err := hex.DecodeString("638ef9d8d8bfff8ad0bd7d9031bcc91ec2897419ac0714195a2aa31a9f9c6b14")
-	require.NoError(t, err)
-	out := Hash(in)
-	require.Equal(t, out[:], expectedOut)
-
+	hashOut := Hash(hashIn)
+	t.Logf("hashOut %x", hashOut)
+	require.Equal(t, hashOut[:], expectedHashOut[:])
 
 /* test vectors from ref python
 prp_key = bytes.fromhex('37620a87ccc74b5e425164371603bd96c794594b7d07e4887bae6c7f08fa9659')
@@ -53,13 +52,14 @@ prp_ct = bytes.fromhex('a74b26c607e56b1f59a84d91ff738e6b55f94ceedc418118347c2b73
 
 
 /*
-aead_key = bytes.fromhex('2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a')
-aead_msg = bytes.fromhex('5245554e494f4e20697320666f722052656e64657a766f7573')
-aead_ad = bytes.fromhex('e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6ec7c98a3ed65327cf')
-aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b')
+aead_key: bytes = bytes.fromhex('2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a')
+aead_pt: bytes = bytes.fromhex('5245554e494f4e20697320666f722052656e64657a766f7573')
+aead_ad: bytes = bytes.fromhex('e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6ec7c98a3ed65327cf')
+aead_ct: bytes = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b')
+   
+*/
 
 
-/*
 	aeadKey, err := hex.DecodeString("2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a")
 	require.NoError(t, err)
 	aeadMesg, err := hex.DecodeString("5245554e494f4e20697320666f722052656e64657a766f7573")
@@ -72,7 +72,7 @@ aead_ct = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
 	require.Equal(t, actualCt, aeadCt)
 
-*/
+
 	
 /*
 esk_a_seed = bytes.fromhex('e60498784e625a21d6285ee7a6144a0464dab10120b11f3794dd00e36da98c27')

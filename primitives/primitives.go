@@ -7,18 +7,21 @@ package primitives
 import "C"
 import (
 	"unsafe"
+	"fmt"
 	"crypto/aes"
 	"hash"
 
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/hkdf"
-
-	hpqchash "github.com/katzenpost/hpqc/hash"
+	"golang.org/x/crypto/chacha20poly1305"
 )
 
 func Hash(b []byte) [32]byte {
-	return hpqchash.Sum256(b)
+	out := blake2b.Sum512(b)
+	ret := [32]byte{}
+	copy(ret[:], out[:32])
+	return ret
 }
 
 func Argon2(password, salt []byte) []byte {
@@ -68,16 +71,27 @@ func AeadEcbDecrypt(key, mesg *[KeySize]byte) []byte {
 const aeadMacSize = 16
 
 func AeadEncrypt(key, mesg, ad []byte) []byte {
-	nonce := make([]byte, 24)	
-	mac, ciphertext, _ := AeadLock(mesg, nonce, key, ad)
-	return append(mac, ciphertext...)
+	cipher, err := chacha20poly1305.NewX(key)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\n\n AEAD NONCE SIZE %d\n\n", cipher.NonceSize())
+	nonce := make([]byte, cipher.NonceSize())
+	return cipher.Seal(nil, nonce, mesg, ad)
 }
 
-func AeadDecrypt(key, mesg, ad []byte) []byte {
-	nonce := make([]byte, 32)
-	mac := mesg[:aeadMacSize]
-	ct := mesg[aeadMacSize:]
-	return AeadUnlock(ct, nonce, key, mac, ad)
+func AeadDecrypt(key, ct, ad []byte) []byte {
+	cipher, err := chacha20poly1305.NewX(key)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\n\n AEAD NONCE SIZE %d\n\n", cipher.NonceSize())
+	nonce := make([]byte, cipher.NonceSize())
+	ret, err := cipher.Open(nil, nonce, ct, ad)
+	if err != nil {
+		panic(err)
+	}
+	return ret
 }
 
 func Unelligator(hidden []byte) []byte {
