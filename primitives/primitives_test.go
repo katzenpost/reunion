@@ -150,4 +150,28 @@ argon2i_hash: bytes = bytes.fromhex('131f782cae57faa5055277621aec7c3984fbef048c8
 	require.NoError(t, err)
 	argon2Result := Argon2(argon2Password, argon2Salt)
 	require.Equal(t, argon2Result, argon2ExpectedResult)
+
+
+	// hkdf
+	/*
+DEFAULT_ARGON_SALT: bytes = b"\x00" * 32
+hkdf_salt: bytes = DEFAULT_HKDF_SALT
+hkdf_key = bytes.fromhex('513e3c670ab00a436de0d801b07e085149ef205d27807d656253cd9a08a7bdf0')
+hkdf_pdk = bytes.fromhex('9a3b6d37987a9ea05709a9ef2b8c8e4e0b0c51088cb6edc93bcacf4ff36fda1c')
+
+    >>> from reunion.__vectors__ import hkdf_salt, hkdf_key, hkdf_pdk, hkdf_pdk
+    >>> _hkdf_result = hkdf(hkdf_key, hkdf_salt)
+    >>> _hkdf_pdk = _hkdf_result.expand(b'', 32)
+    >>> hkdf_pdk == _hkdf_pdk
+    Trueo
+	*/
+	hkdfKey, err := hex.DecodeString("513e3c670ab00a436de0d801b07e085149ef205d27807d656253cd9a08a7bdf0")
+	require.NoError(t, err)
+	hkdfSalt := make([]byte, 32)
+	hkdfExpected, err := hex.DecodeString("9a3b6d37987a9ea05709a9ef2b8c8e4e0b0c51088cb6edc93bcacf4ff36fda1c")
+	require.NoError(t, err)
+	hkdfOut := HKDF(hkdfKey, hkdfSalt)
+	require.Equal(t, hkdfOut, hkdfExpected)
+
+
 }
