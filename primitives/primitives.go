@@ -7,7 +7,6 @@ package primitives
 import "C"
 import (
 	"unsafe"
-	"fmt"
 	"crypto/aes"
 	"hash"
 
@@ -75,9 +74,10 @@ func AeadEncrypt(key, mesg, ad []byte) []byte {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\n\n AEAD NONCE SIZE %d\n\n", cipher.NonceSize())
 	nonce := make([]byte, cipher.NonceSize())
-	return cipher.Seal(nil, nonce, mesg, ad)
+	out := cipher.Seal(nil, nonce, mesg, ad)
+	ciphertext, tag := out[:len(mesg)], out[len(mesg):]
+	return append(tag, ciphertext...)
 }
 
 func AeadDecrypt(key, ct, ad []byte) []byte {
@@ -85,9 +85,10 @@ func AeadDecrypt(key, ct, ad []byte) []byte {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\n\n AEAD NONCE SIZE %d\n\n", cipher.NonceSize())
+	tag, ciphertext := ct[:cipher.Overhead()], ct[cipher.Overhead():]
+	ct2 := append(ciphertext, tag...)
 	nonce := make([]byte, cipher.NonceSize())
-	ret, err := cipher.Open(nil, nonce, ct, ad)
+	ret, err := cipher.Open(nil, nonce, ct2, ad)
 	if err != nil {
 		panic(err)
 	}

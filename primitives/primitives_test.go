@@ -58,8 +58,6 @@ aead_ad: bytes = bytes.fromhex('e7bab55e065f23a4cb74ce9e6c02aed0c31c90cce16b3d6e
 aead_ct: bytes = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec6713cf7c6fb27719a9007606f7834853245b')
    
 */
-
-
 	aeadKey, err := hex.DecodeString("2e845d6aa49d50fd388c9c7072aac817ec71e323a4d32532263a757c98404c8a")
 	require.NoError(t, err)
 	aeadMesg, err := hex.DecodeString("5245554e494f4e20697320666f722052656e64657a766f7573")
@@ -72,6 +70,8 @@ aead_ct: bytes = bytes.fromhex('a405c2d42d576140108a84a08a9c8ee140d5c72c5332ec67
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
 	require.Equal(t, actualCt, aeadCt)
 
+	aeadDecrypted := AeadDecrypt(aeadKey, actualCt, aeadAd)
+	require.Equal(t, aeadDecrypted, aeadMesg)
 
 	
 /*
