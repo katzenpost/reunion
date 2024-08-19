@@ -29,13 +29,19 @@ func Argon2(password, salt []byte) []byte {
 
 func HKDF(ikm, salt []byte) []byte {
 	h := func() hash.Hash {
-		h, err := blake2b.New256(nil)
+		h, err := blake2b.New512(nil)
 		if err != nil {
 			panic(err)
 		}
 		return h
 	}
-	return hkdf.Extract(h, ikm, salt)
+	r := hkdf.New(h, ikm, salt, nil)
+	out := make([]byte, 32)
+	_, err := r.Read(out)
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
 const KeySize = 32
