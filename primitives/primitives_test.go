@@ -138,3 +138,15 @@ func TestHKDF(t *testing.T) {
 	hkdfOut := HKDF(hkdfKey, hkdfSalt)
 	require.Equal(t, hkdfOut, hkdfExpected)
 }
+
+func TestCTIDHDeterministicRNG(t *testing.T) {
+	seed, err := hex.DecodeString("163d228fd8182bdb0e259fbf0ed5a776b47126ba4d61d774cce87f6546f8d677")
+	require.NoError(t, err)
+	context := uint64(1)
+
+	detRng := HighCtidhDeterministicRNG(seed)
+	outBuf := make([]byte, 256)
+	detRng(outBuf, context)
+
+	t.Logf("outBuf %x", outBuf)
+}
