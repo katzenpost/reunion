@@ -6,14 +6,16 @@ package primitives
 //#include "monocypher.h"
 import "C"
 import (
-	"unsafe"
 	"crypto/aes"
+	"encoding/binary"
 	"hash"
+	"unsafe"
 
-	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/argon2"
-	"golang.org/x/crypto/hkdf"
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/hkdf"
+	"golang.org/x/crypto/sha3"
 )
 
 func Hash(b []byte) [32]byte {
@@ -45,7 +47,6 @@ func HKDF(ikm, salt []byte) []byte {
 }
 
 const KeySize = 32
-
 
 func AeadEcbEncrypt(key, mesg *[KeySize]byte) []byte {
 	cipher, err := aes.NewCipher(key[:])
@@ -114,4 +115,39 @@ func GenerateHiddenKeyPair(seed *[KeySize]byte) ([]byte, []byte) {
 		(*C.uint8_t)(unsafe.Pointer(&sk[0])),
 		(*C.uint8_t)(unsafe.Pointer(&seed[0])))
 	return pk, sk
+}
+
+func HighCtidhDeterministicRNG(seed []byte) func(buf []byte, context uint64) {
+	if len(seed) < 32 {
+		panic("deterministic seed should be at least 256 bits")
+	}
+
+	contextState := make(map[uint64]uint64)
+
+	shake256CSPRNG := func(buf []byte, context uint64) {
+		// Update the context state
+		contextState[context]++
+		portableState := make([]byte, 8)
+		portableContext := make([]byte, 8)
+		binary.LittleEndian.PutUint64(portableState, contextState[context])
+		binary.LittleEndian.PutUint64(portableContext, context)
+
+		// Create SHAKE-256 hash instance
+		shake := sha3.NewShake256()
+		shake.Write(portableContext)
+		shake.Write(portableState)
+		shake.Write(seed)
+
+		// Generate output
+		output := make([]byte, len(buf))
+		shake.Read(output)
+
+		// Convert to little-endian uint32 and pack to native byte order
+		for i := 0; i < len(buf); i += 4 {
+			portableUint32 := binary.LittleEndian.Uint32(output[i : i+4])
+			binary.LittleEndian.PutUint32(buf[i:i+4], portableUint32)
+		}
+	}
+
+	return shake256CSPRNG
 }
