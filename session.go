@@ -224,18 +224,30 @@ func CreateDeterministicSesson(passphrase, payload, seed []byte, ctidhPubKey *[c
 	return CreateSession(salt, passphrase, payload, dhSeed, ctidhPubKey, ctidhPrivKey, gammaSeed[:], deltaSeed[:], dummySeed[:], tweak)
 }
 
-func (s *Session) ProcessT1(t1Bytes []byte) []byte {
+func (s *Session) ProcessT1(t1Bytes []byte) ([]byte, error) {
 	t1 := new(T1)
 	err := t1.UnmarshalBinary(t1Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	peer, ok := s.Peers[t1.ID()]
 	if !ok {
-		// XXX
-		//peer = blah
+		peer, err = NewPeer(t1, s)
+		if err != nil {
+			return nil, err
+		}
 	}
+	return peer.T2Tx, nil
+}
 
-	// XXX
-	return peer.T2Tx
+func (s *Session) ProcessT2(t1id *[32]byte, t2 []byte) ([]byte, bool) {
+	/*
+		peer, ok := s.Peers[*t1id]
+		if ok {
+			//return peer.ProcessT2(t2)
+		}
+		// return s.DummyHKDF
+	*/
+	return nil, false // XXX
+
 }
