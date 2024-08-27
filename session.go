@@ -38,3 +38,10 @@ func (t *T1) UnmarshalBinary(data []byte) error {
 	copy(t.Delta[:], data[alphaLen+betaLen+gammaLen:])
 	return nil
 }
+
+type Peer struct{}
+
+type Session struct {
+	Peers   map[[32]byte]*Peer
+	Results []int // XXX fix type, when we learn what it's a list of (e.g. in lean4: List UInt32)
+}
