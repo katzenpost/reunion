@@ -94,19 +94,19 @@ func TestElligator(t *testing.T) {
 	curveA := Unelligator(pkA)
 	expectedCurveA, err := hex.DecodeString("95fa3b2a70e42f4dc66117a02680ddfe45a55451654e7bd685ba2a4179289104")
 	require.NoError(t, err)
-	require.Equal(t, expectedCurveA, curveA)
+	require.Equal(t, expectedCurveA, curveA[:])
 
 	curveB := Unelligator(pkB)
 	expectedCurveB, err := hex.DecodeString("6d4d5132efddd1ccfdb42178d5cab993617b50a43e24a0b6679e0d6f17ddae1e")
 	require.NoError(t, err)
-	require.Equal(t, expectedCurveB, curveB)
+	require.Equal(t, expectedCurveB, curveB[:])
 
 	// test elligator DH
 	s := schemes.ByName("X25519")
-	pubKey1, err := s.UnmarshalBinaryPublicKey(curveB)
+	pubKey1, err := s.UnmarshalBinaryPublicKey(curveB[:])
 	require.NoError(t, err)
 
-	pubKey2, err := s.UnmarshalBinaryPublicKey(curveA)
+	pubKey2, err := s.UnmarshalBinaryPublicKey(curveA[:])
 	require.NoError(t, err)
 
 	privKeyA, err := s.UnmarshalBinaryPrivateKey(skA[:])
