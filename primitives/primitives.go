@@ -18,18 +18,18 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func Hash(b []byte) [32]byte {
+func Hash(b []byte) *[32]byte {
 	out := blake2b.Sum512(b)
 	ret := [32]byte{}
 	copy(ret[:], out[:32])
-	return ret
+	return &ret
 }
 
-func Argon2(password, salt []byte) []byte {
-	return argon2.Key(password, salt, 3, 100000, 1, 32)
+func Argon2(password []byte, salt *[32]byte) []byte {
+	return argon2.Key(password, salt[:], 3, 100000, 1, 32)
 }
 
-func HKDF(ikm, salt []byte) []byte {
+func HKDF(ikm []byte, salt *[32]byte) *[32]byte {
 	h := func() hash.Hash {
 		h, err := blake2b.New512(nil)
 		if err != nil {
@@ -37,9 +37,9 @@ func HKDF(ikm, salt []byte) []byte {
 		}
 		return h
 	}
-	r := hkdf.New(h, ikm, salt, nil)
-	out := make([]byte, 32)
-	_, err := r.Read(out)
+	r := hkdf.New(h, ikm[:], salt[:], nil)
+	out := &[32]byte{}
+	_, err := r.Read(out[:])
 	if err != nil {
 		panic(err)
 	}
@@ -102,18 +102,22 @@ func AeadDecrypt(key, ct, ad []byte) []byte {
 	return ret
 }
 
-func Unelligator(hidden []byte) []byte {
+func Unelligator(hidden *[KeySize]byte) []byte {
 	curve := make([]byte, KeySize)
 	C.crypto_elligator_map((*C.uint8_t)(unsafe.Pointer(&curve[0])), (*C.uint8_t)(unsafe.Pointer(&hidden[0])))
 	return curve
 }
 
-func GenerateHiddenKeyPair(seed *[KeySize]byte) ([]byte, []byte) {
-	pk := make([]byte, KeySize)
-	sk := make([]byte, KeySize)
-	C.crypto_elligator_key_pair((*C.uint8_t)(unsafe.Pointer(&pk[0])),
-		(*C.uint8_t)(unsafe.Pointer(&sk[0])),
+func GenerateHiddenKeyPair(seed *[KeySize]byte) (*[KeySize]byte, *[KeySize]byte) {
+	pkraw := make([]byte, KeySize)
+	skraw := make([]byte, KeySize)
+	C.crypto_elligator_key_pair((*C.uint8_t)(unsafe.Pointer(&pkraw[0])),
+		(*C.uint8_t)(unsafe.Pointer(&skraw[0])),
 		(*C.uint8_t)(unsafe.Pointer(&seed[0])))
+	pk := &[32]byte{}
+	copy(pk[:], pkraw)
+	sk := &[32]byte{}
+	copy(sk[:], skraw)
 	return pk, sk
 }
 
