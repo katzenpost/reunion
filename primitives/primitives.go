@@ -48,12 +48,12 @@ func HKDF(ikm []byte, salt *[32]byte) *[32]byte {
 
 const KeySize = 32
 
-func AeadEcbEncrypt(key, mesg *[KeySize]byte) []byte {
+func AeadEcbEncrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	cipher, err := aes.NewCipher(key[:])
 	if err != nil {
 		panic(err)
 	}
-	encrypted := make([]byte, KeySize)
+	encrypted := &[KeySize]byte{}
 	size := 16
 	for bs, be := 0, size; bs < KeySize; bs, be = bs+size, be+size {
 		cipher.Encrypt(encrypted[bs:be], mesg[bs:be])
@@ -61,12 +61,12 @@ func AeadEcbEncrypt(key, mesg *[KeySize]byte) []byte {
 	return encrypted
 }
 
-func AeadEcbDecrypt(key, mesg *[KeySize]byte) []byte {
+func AeadEcbDecrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	cipher, err := aes.NewCipher(key[:])
 	if err != nil {
 		panic(err)
 	}
-	decrypted := make([]byte, KeySize)
+	decrypted := &[KeySize]byte{}
 	size := 16
 	for bs, be := 0, size; bs < KeySize; bs, be = bs+size, be+size {
 		cipher.Decrypt(decrypted[bs:be], mesg[bs:be])

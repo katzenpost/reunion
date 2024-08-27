@@ -44,7 +44,7 @@ func TestPRP(t *testing.T) {
 	require.Equal(t, ciphertext[:], expectedCiphertext[:])
 
 	block := &[32]byte{}
-	copy(block[:], ciphertext)
+	copy(block[:], ciphertext[:])
 	plaintext := AeadEcbDecrypt(keyArr, block)
 	require.Equal(t, plaintext[:], mesg[:])
 }
