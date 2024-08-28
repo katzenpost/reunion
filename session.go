@@ -5,7 +5,6 @@ package reunion
 
 import (
 	"github.com/katzenpost/hpqc/nike/schemes"
-	// "github.com/katzenpost/hpqc/nike/x25519"
 	"github.com/katzenpost/reunion/primitives"
 )
 
