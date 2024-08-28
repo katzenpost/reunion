@@ -142,7 +142,7 @@ type Session struct {
 	SkDelta   []byte
 	AlphaKey  *[32]byte
 	T1        *T1
-	DummyHKDF []byte
+	DummyHKDF *primitives.HKDF
 }
 
 func CreateSession(
@@ -157,7 +157,11 @@ func CreateSession(
 	dummySeed []byte, tweak byte) *Session {
 
 	dhEpk, dhSk := primitives.GenerateHiddenKeyPair(dhSeed)
-	pdk := primitives.HKDF(primitives.Argon2(passphrase, salt), salt)
+	kdf := primitives.NewHKDF(primitives.Argon2(passphrase, salt), salt)
+	pdkRaw := kdf.Expand([]byte(""), 32)
+	pdk := &[32]byte{}
+	copy(pdk[:], pdkRaw)
+
 	skGamma := primitives.Hash(append(pdk[:], append(gammeSeed, payload...)...))
 	skDelta := primitives.Hash(append(pdk[:], append(deltaSeed, payload...)...))
 
@@ -194,7 +198,7 @@ func CreateSession(
 		Delta: delta,
 	}
 
-	dummyHkdf := primitives.HKDF(dummySeed, salt)
+	dummyHkdf := primitives.NewHKDF(dummySeed, salt)
 
 	return &Session{
 		Peers:     make(map[[32]byte]*Peer),
@@ -209,7 +213,7 @@ func CreateSession(
 		SkDelta:   skDelta[:],
 		AlphaKey:  alphaKey,
 		T1:        t1,
-		DummyHKDF: dummyHkdf[:],
+		DummyHKDF: dummyHkdf,
 	}
 }
 
