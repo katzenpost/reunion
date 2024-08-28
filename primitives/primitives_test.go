@@ -62,7 +62,8 @@ func TestAEAD(t *testing.T) {
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
 	require.Equal(t, actualCt, aeadCt)
 
-	aeadDecrypted := AeadDecrypt(aeadKey, actualCt, aeadAd)
+	aeadDecrypted, ok := AeadDecrypt(aeadKey, actualCt, aeadAd)
+	require.True(t, ok)
 	require.Equal(t, aeadDecrypted, aeadMesg)
 }
 

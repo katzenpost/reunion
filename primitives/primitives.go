@@ -101,7 +101,7 @@ func AeadEncrypt(key, mesg, ad []byte) []byte {
 	return append(tag, ciphertext...)
 }
 
-func AeadDecrypt(key, ct, ad []byte) []byte {
+func AeadDecrypt(key, ct, ad []byte) ([]byte, bool) {
 	cipher, err := chacha20poly1305.NewX(key)
 	if err != nil {
 		panic(err)
@@ -111,9 +111,9 @@ func AeadDecrypt(key, ct, ad []byte) []byte {
 	nonce := make([]byte, cipher.NonceSize())
 	ret, err := cipher.Open(nil, nonce, ct2, ad)
 	if err != nil {
-		panic(err)
+		return nil, false
 	}
-	return ret
+	return ret, true
 }
 
 func Unelligator(hidden *[KeySize]byte) *[32]byte {

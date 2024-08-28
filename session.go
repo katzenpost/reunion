@@ -67,6 +67,8 @@ type Peer struct {
 	T2KeyRx  *[32]byte
 	T2Tx     []byte
 	T2Rx     []byte
+	T3KeyRx  *[32]byte
+	T3KeyTx  *[32]byte
 	Payload  []byte
 }
 
@@ -127,6 +129,62 @@ func NewPeer(t1 *T1, session *Session) (*Peer, error) {
 	p.Payload = nil
 
 	return p, nil
+}
+
+// ProcessT2 implements the inside of the for loop in Phase 3 of
+// Algorithm 1. It returns a 2-tuple of (t3, is_dummy).
+func (p *Peer) ProcessT2(t2 []byte) ([]byte, bool) {
+
+	// Step 26: skBiγ ← rijndael-dec(T2kirx, T2Bi)
+	// sk_gamma = prp_decrypt(peer.t2key_rx, t2)
+	t2Ar := &[32]byte{}
+	copy(t2Ar[:], t2)
+	skGamma := primitives.AeadEcbEncrypt(p.T2KeyRx, t2Ar)
+
+	// Step 27: if “” = aead-dec(sk B i γ , T 1 B i γ , RS) then
+	// aead_res = aead_decrypt(sk_gamma, peer.t1.gamma, peer.session.salt)
+	_, ok := primitives.AeadDecrypt(skGamma[:], p.T1.Gamma[:], p.Session.Salt[:])
+	if ok {
+		// Step 28: T3kitx ← H(T2kitx, T2Ai , T2Bi).
+		// t3key_tx = Hash(peer.t2key_tx + peer.t2_tx + t2)
+		p.T2Rx = t2
+		t3KeyTx := primitives.Hash(append(p.T2KeyTx[:], append(p.T2Tx, t2...)...))
+
+		// Step 29: T3kirx ← H(T2kirx, T2Bi, T2Ai)
+		// peer.t3_key_rx = Hash(peer.t2key_rx + peer.t2_rx + peer.t2_tx)
+		p.T3KeyRx = primitives.Hash(append(p.T2KeyRx[:], append(p.T2Rx, p.T2Tx...)...))
+
+		// Step 30: T3Ai ← rijndael-enc(T3kitx, skAδ)
+		// return prp_encrypt(t3key_tx, peer.session.sk_delta), False
+		block := &[32]byte{}
+		copy(block[:], p.Session.SkDelta)
+		out := primitives.AeadEcbEncrypt(t3KeyTx, block)
+		return out[:], true
+	}
+	// Step 31: else
+	// Step 32: T3Ai ← H(RNG(32))
+	t1id := p.T1.ID()
+	return p.Session.DummyHKDF.Expand(append(t1id[:], t2...), 32), true
+}
+
+func (p *Peer) ProcessT3(t3 []byte) []byte {
+	// Step 36: for each new T3Bi do ▷ Phase 4: Process T3; decrypt δ
+	if p.T2Rx == nil {
+		return nil
+	}
+
+	// Step 37: skBiδ ← rijndael-dec(T3kirx, T3Bi).
+	t3Ar := &[32]byte{}
+	copy(t3Ar[:], t3)
+	skDelta := primitives.AeadEcbDecrypt(p.T3KeyRx, t3Ar)
+
+	// Step 38: if msgBi ← aead-dec(skBiδ, T1Biδ, RS) then
+	var ok bool
+	p.Payload, ok = primitives.AeadDecrypt(skDelta[:], p.T1.Delta, p.Session.Salt[:])
+	if ok {
+		p.Session.Results = append(p.Session.Results, p.Payload)
+	}
+	return p.Payload
 }
 
 type Session struct {
@@ -245,13 +303,18 @@ func (s *Session) ProcessT1(t1Bytes []byte) ([]byte, error) {
 }
 
 func (s *Session) ProcessT2(t1id *[32]byte, t2 []byte) ([]byte, bool) {
-	/*
-		peer, ok := s.Peers[*t1id]
-		if ok {
-			//return peer.ProcessT2(t2)
-		}
-		// return s.DummyHKDF
-	*/
-	return nil, false // XXX
+	peer, ok := s.Peers[*t1id]
+	if ok {
+		return peer.ProcessT2(t2)
+	}
+	return s.DummyHKDF.Expand(append(t1id[:], t2...), 32), true
+}
 
+// ProcessT3 returns a byte slice on success or a nil on failure.
+func (s *Session) ProcessT3(t1id *[32]byte, t3 []byte) []byte {
+	peer, ok := s.Peers[*t1id]
+	if ok {
+		return peer.ProcessT3(t3)
+	}
+	return nil
 }
