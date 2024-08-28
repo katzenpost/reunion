@@ -29,19 +29,33 @@ func Argon2(password []byte, salt *[32]byte) []byte {
 	return argon2.Key(password, salt[:], 3, 100000, 1, 32)
 }
 
-func HKDF(ikm []byte, salt *[32]byte) *[32]byte {
-	h := func() hash.Hash {
-		h, err := blake2b.New512(nil)
-		if err != nil {
-			panic(err)
-		}
-		return h
-	}
-	r := hkdf.New(h, ikm[:], salt[:], nil)
-	out := &[32]byte{}
-	_, err := r.Read(out[:])
+type HKDF struct {
+	PRK []byte
+}
+
+func (h *HKDF) Hash() hash.Hash {
+	h1, err := blake2b.New512(nil)
 	if err != nil {
 		panic(err)
+	}
+	return h1
+}
+
+func NewHKDF(ikm []byte, salt *[32]byte) *HKDF {
+	h := &HKDF{}
+	h.PRK = hkdf.Extract(h.Hash, ikm, salt[:])
+	return h
+}
+
+func (h *HKDF) Expand(info []byte, length int) []byte {
+	r := hkdf.Expand(h.Hash, h.PRK, info)
+	out := make([]byte, length)
+	count, err := r.Read(out)
+	if err != nil {
+		panic(err)
+	}
+	if count != length {
+		panic("hkdf expand failure")
 	}
 	return out
 }

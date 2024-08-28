@@ -135,7 +135,8 @@ func TestHKDF(t *testing.T) {
 	hkdfSalt := &[32]byte{}
 	hkdfExpected, err := hex.DecodeString("9a3b6d37987a9ea05709a9ef2b8c8e4e0b0c51088cb6edc93bcacf4ff36fda1c")
 	require.NoError(t, err)
-	hkdfOut := HKDF(hkdfKey, hkdfSalt)
+	hkdfRef := NewHKDF(hkdfKey, hkdfSalt)
+	hkdfOut := hkdfRef.Expand([]byte(""), 32)
 	require.Equal(t, hkdfOut[:], hkdfExpected)
 }
 
