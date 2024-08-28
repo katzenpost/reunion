@@ -44,7 +44,7 @@ func TestPRP(t *testing.T) {
 	require.Equal(t, ciphertext[:], expectedCiphertext[:])
 
 	block := &[32]byte{}
-	copy(block[:], ciphertext)
+	copy(block[:], ciphertext[:])
 	plaintext := AeadEcbDecrypt(keyArr, block)
 	require.Equal(t, plaintext[:], mesg[:])
 }
@@ -62,7 +62,8 @@ func TestAEAD(t *testing.T) {
 	actualCt := AeadEncrypt(aeadKey, aeadMesg, aeadAd)
 	require.Equal(t, actualCt, aeadCt)
 
-	aeadDecrypted := AeadDecrypt(aeadKey, actualCt, aeadAd)
+	aeadDecrypted, ok := AeadDecrypt(aeadKey, actualCt, aeadAd)
+	require.True(t, ok)
 	require.Equal(t, aeadDecrypted, aeadMesg)
 }
 
@@ -76,8 +77,8 @@ func TestElligator(t *testing.T) {
 	rawSkA, err := hex.DecodeString("f988f98f466ff8585598ad12956b385e6090e9fdfdac3ca17c77cad61ac8a430")
 	require.NoError(t, err)
 	pkA, skA := GenerateHiddenKeyPair(seedA)
-	require.Equal(t, pkA, rawPkA)
-	require.Equal(t, skA, rawSkA)
+	require.Equal(t, pkA[:], rawPkA)
+	require.Equal(t, skA[:], rawSkA)
 
 	seedB := &[KeySize]byte{}
 	rawSeedB, err := hex.DecodeString("f50a1248b83f07c6232485508bc889352531a5387b18580d8f6685c352c454d2")
@@ -88,31 +89,31 @@ func TestElligator(t *testing.T) {
 	rawSkB, err := hex.DecodeString("8ba80391df517ee3e3901046adf8c4aab8068cb9a569349e98ee8241b7fde770")
 	require.NoError(t, err)
 	pkB, skB := GenerateHiddenKeyPair(seedB)
-	require.Equal(t, pkB, rawPkB)
-	require.Equal(t, skB, rawSkB)
+	require.Equal(t, pkB[:], rawPkB)
+	require.Equal(t, skB[:], rawSkB)
 
 	curveA := Unelligator(pkA)
 	expectedCurveA, err := hex.DecodeString("95fa3b2a70e42f4dc66117a02680ddfe45a55451654e7bd685ba2a4179289104")
 	require.NoError(t, err)
-	require.Equal(t, expectedCurveA, curveA)
+	require.Equal(t, expectedCurveA, curveA[:])
 
 	curveB := Unelligator(pkB)
 	expectedCurveB, err := hex.DecodeString("6d4d5132efddd1ccfdb42178d5cab993617b50a43e24a0b6679e0d6f17ddae1e")
 	require.NoError(t, err)
-	require.Equal(t, expectedCurveB, curveB)
+	require.Equal(t, expectedCurveB, curveB[:])
 
 	// test elligator DH
 	s := schemes.ByName("X25519")
-	pubKey1, err := s.UnmarshalBinaryPublicKey(curveB)
+	pubKey1, err := s.UnmarshalBinaryPublicKey(curveB[:])
 	require.NoError(t, err)
 
-	pubKey2, err := s.UnmarshalBinaryPublicKey(curveA)
+	pubKey2, err := s.UnmarshalBinaryPublicKey(curveA[:])
 	require.NoError(t, err)
 
-	privKeyA, err := s.UnmarshalBinaryPrivateKey(skA)
+	privKeyA, err := s.UnmarshalBinaryPrivateKey(skA[:])
 	require.NoError(t, err)
 
-	privKeyB, err := s.UnmarshalBinaryPrivateKey(skB)
+	privKeyB, err := s.UnmarshalBinaryPrivateKey(skB[:])
 	require.NoError(t, err)
 
 	ss1 := s.DeriveSecret(privKeyA, pubKey1)
@@ -122,7 +123,7 @@ func TestElligator(t *testing.T) {
 
 func TestArgon2i(t *testing.T) {
 	argon2Password := []byte("REUNION is for rendezvous")
-	argon2Salt := make([]byte, 32)
+	argon2Salt := &[32]byte{}
 	argon2ExpectedResult, err := hex.DecodeString("131f782cae57faa5055277621aec7c3984fbef048c8d183848f3def2697c7acd")
 	require.NoError(t, err)
 	argon2Result := Argon2(argon2Password, argon2Salt)
@@ -132,11 +133,12 @@ func TestArgon2i(t *testing.T) {
 func TestHKDF(t *testing.T) {
 	hkdfKey, err := hex.DecodeString("513e3c670ab00a436de0d801b07e085149ef205d27807d656253cd9a08a7bdf0")
 	require.NoError(t, err)
-	hkdfSalt := make([]byte, 32)
+	hkdfSalt := &[32]byte{}
 	hkdfExpected, err := hex.DecodeString("9a3b6d37987a9ea05709a9ef2b8c8e4e0b0c51088cb6edc93bcacf4ff36fda1c")
 	require.NoError(t, err)
-	hkdfOut := HKDF(hkdfKey, hkdfSalt)
-	require.Equal(t, hkdfOut, hkdfExpected)
+	hkdfRef := NewHKDF(hkdfKey, hkdfSalt)
+	hkdfOut := hkdfRef.Expand([]byte(""), 32)
+	require.Equal(t, hkdfOut[:], hkdfExpected)
 }
 
 func TestCTIDHDeterministicRNG(t *testing.T) {

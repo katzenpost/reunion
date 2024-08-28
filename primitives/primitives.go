@@ -18,42 +18,56 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func Hash(b []byte) [32]byte {
+func Hash(b []byte) *[32]byte {
 	out := blake2b.Sum512(b)
 	ret := [32]byte{}
 	copy(ret[:], out[:32])
-	return ret
+	return &ret
 }
 
-func Argon2(password, salt []byte) []byte {
-	return argon2.Key(password, salt, 3, 100000, 1, 32)
+func Argon2(password []byte, salt *[32]byte) []byte {
+	return argon2.Key(password, salt[:], 3, 100000, 1, 32)
 }
 
-func HKDF(ikm, salt []byte) []byte {
-	h := func() hash.Hash {
-		h, err := blake2b.New512(nil)
-		if err != nil {
-			panic(err)
-		}
-		return h
-	}
-	r := hkdf.New(h, ikm, salt, nil)
-	out := make([]byte, 32)
-	_, err := r.Read(out)
+type HKDF struct {
+	PRK []byte
+}
+
+func (h *HKDF) Hash() hash.Hash {
+	h1, err := blake2b.New512(nil)
 	if err != nil {
 		panic(err)
+	}
+	return h1
+}
+
+func NewHKDF(ikm []byte, salt *[32]byte) *HKDF {
+	h := &HKDF{}
+	h.PRK = hkdf.Extract(h.Hash, ikm, salt[:])
+	return h
+}
+
+func (h *HKDF) Expand(info []byte, length int) []byte {
+	r := hkdf.Expand(h.Hash, h.PRK, info)
+	out := make([]byte, length)
+	count, err := r.Read(out)
+	if err != nil {
+		panic(err)
+	}
+	if count != length {
+		panic("hkdf expand failure")
 	}
 	return out
 }
 
 const KeySize = 32
 
-func AeadEcbEncrypt(key, mesg *[KeySize]byte) []byte {
+func AeadEcbEncrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	cipher, err := aes.NewCipher(key[:])
 	if err != nil {
 		panic(err)
 	}
-	encrypted := make([]byte, KeySize)
+	encrypted := &[KeySize]byte{}
 	size := 16
 	for bs, be := 0, size; bs < KeySize; bs, be = bs+size, be+size {
 		cipher.Encrypt(encrypted[bs:be], mesg[bs:be])
@@ -61,12 +75,12 @@ func AeadEcbEncrypt(key, mesg *[KeySize]byte) []byte {
 	return encrypted
 }
 
-func AeadEcbDecrypt(key, mesg *[KeySize]byte) []byte {
+func AeadEcbDecrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	cipher, err := aes.NewCipher(key[:])
 	if err != nil {
 		panic(err)
 	}
-	decrypted := make([]byte, KeySize)
+	decrypted := &[KeySize]byte{}
 	size := 16
 	for bs, be := 0, size; bs < KeySize; bs, be = bs+size, be+size {
 		cipher.Decrypt(decrypted[bs:be], mesg[bs:be])
@@ -87,7 +101,7 @@ func AeadEncrypt(key, mesg, ad []byte) []byte {
 	return append(tag, ciphertext...)
 }
 
-func AeadDecrypt(key, ct, ad []byte) []byte {
+func AeadDecrypt(key, ct, ad []byte) ([]byte, bool) {
 	cipher, err := chacha20poly1305.NewX(key)
 	if err != nil {
 		panic(err)
@@ -97,23 +111,27 @@ func AeadDecrypt(key, ct, ad []byte) []byte {
 	nonce := make([]byte, cipher.NonceSize())
 	ret, err := cipher.Open(nil, nonce, ct2, ad)
 	if err != nil {
-		panic(err)
+		return nil, false
 	}
-	return ret
+	return ret, true
 }
 
-func Unelligator(hidden []byte) []byte {
-	curve := make([]byte, KeySize)
+func Unelligator(hidden *[KeySize]byte) *[32]byte {
+	curve := &[KeySize]byte{}
 	C.crypto_elligator_map((*C.uint8_t)(unsafe.Pointer(&curve[0])), (*C.uint8_t)(unsafe.Pointer(&hidden[0])))
 	return curve
 }
 
-func GenerateHiddenKeyPair(seed *[KeySize]byte) ([]byte, []byte) {
-	pk := make([]byte, KeySize)
-	sk := make([]byte, KeySize)
-	C.crypto_elligator_key_pair((*C.uint8_t)(unsafe.Pointer(&pk[0])),
-		(*C.uint8_t)(unsafe.Pointer(&sk[0])),
+func GenerateHiddenKeyPair(seed *[KeySize]byte) (*[KeySize]byte, *[KeySize]byte) {
+	pkraw := make([]byte, KeySize)
+	skraw := make([]byte, KeySize)
+	C.crypto_elligator_key_pair((*C.uint8_t)(unsafe.Pointer(&pkraw[0])),
+		(*C.uint8_t)(unsafe.Pointer(&skraw[0])),
 		(*C.uint8_t)(unsafe.Pointer(&seed[0])))
+	pk := &[32]byte{}
+	copy(pk[:], pkraw)
+	sk := &[32]byte{}
+	copy(sk[:], skraw)
 	return pk, sk
 }
 
