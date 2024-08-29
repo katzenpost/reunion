@@ -274,17 +274,6 @@ func CreateSession(
 	}
 }
 
-func CreateDeterministicSesson(passphrase, payload, seed []byte, ctidhPubKey *[csidhPubKeyLen]byte, ctidhPrivKey *[csidhPrivKeyLen]byte) *Session {
-	salt := &[32]byte{}
-	copy(salt[:], DefaultHkdfSalt)
-	dhSeed := primitives.Hash(append(seed, []byte("dh")...))
-	gammaSeed := primitives.Hash(append(seed, []byte("g")...))
-	deltaSeed := primitives.Hash(append(seed, []byte("d")...))
-	dummySeed := primitives.Hash(append(seed, []byte("d")...))
-	tweak := primitives.Hash(append(seed, []byte("t")...))[0]
-	return CreateSession(salt, passphrase, payload, dhSeed, ctidhPubKey, ctidhPrivKey, gammaSeed[:], deltaSeed[:], dummySeed[:], tweak)
-}
-
 func (s *Session) ProcessT1(t1Bytes []byte) ([]byte, error) {
 	t1 := new(T1)
 	err := t1.UnmarshalBinary(t1Bytes)

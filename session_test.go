@@ -1,6 +1,7 @@
 package reunion
 
 import (
+	"crypto/hmac"
 	"encoding/hex"
 	"testing"
 
@@ -49,42 +50,164 @@ func TestT1Encoding(t *testing.T) {
 }
 
 func TestDeterministicSession(t *testing.T) {
-	dsessionCtidhSkBytes, err := hex.DecodeString("010001feff000200ff000000fd00000200feff01fffe00030000fffe00ffffffffff00fc0000fe02fe000000000001fe0001fe00ff0101020001000100ff00ffff00020000ff0100fd00000101fffe010002000001ff0002ff0001ff000100ff0201000000000200ff000000fffe0001ff0002fe000000000100010000ff00000000")
+	dsessionSeed, err := hex.DecodeString("0123456789")
 	require.NoError(t, err)
-	dsessionCtidhPkBytes, err := hex.DecodeString("2a6a622e79b73b4f7310e592a06088afd5d8e74cafb931dc9805db8269ac04427c6a1ff1c7058a1e8391a58ddc7d5a5ee8133b07c97e7ef85986934c9c01e5c05aaf77e6bf99f7c59eef4f3c81c3ecf264c41d538ae540c7f2fce92b2df6abe9fa5aa864912b4a19931d2be70407f2b3b46e8c88d077cf2eb603f9dfa2276a08")
+	dsessionSeedA := append([]byte("alice"), dsessionSeed...)
+	require.NoError(t, err)
+	dsessionSeedB := append([]byte("bob"), dsessionSeed...)
+	require.NoError(t, err)
+	// dsessionPassphrase := []byte("reunion is for rendezvous")
+	dsessionGammaSeedA := []byte("6ba51aada3aca321534d73733860b59ea63a9746dc0bd3b00c09f5eb6feb508a")
+	dsessionGammaSeedB := []byte("75884ac7ad53827bb7bf280bc016191bcdfb6ef80c434e8155ef102e8db258ce")
+	dsessionDeltaSeedA := []byte("d5d0587357083f14ba559f775432b948f30e8e658ff866e2873b7768b3fa8ba5")
+	dsessionDeltaSeedB := []byte("33f1732459211686a4acf28f0cccaa0b8cb9f57b5398765481cd073297a38449")
+	dsessionDummySeedA := []byte("a99f86fb345e9d833ce5534df39beb076f48c4cb62cdb940e23324df510065ea")
+	dsessionDummySeedB := []byte("9e7a7f9f95146604a206a1a577f6d34dc9550054ae635d955eef9b33a8a899b9")
+	dsessionTweakA := uint8(32)
+	dsessionTweakB := uint8(243)
+	dsessionPayloadA, err := hex.DecodeString("f06b1a5db24a0394fb28a53de02059fc34166424e40e64d7a857efdc38f158f1")
+	require.NoError(t, err)
+	dsessionPayloadB, err := hex.DecodeString("03475cb34f16bceabe4945197cf2a0064eb3a28601fc9489e613debe5e282e1d")
+	require.NoError(t, err)
+	dsessionAT1, err := hex.DecodeString("e668c52c59cacc162dc6e36dcf42b6ee861a5765b45d8f83c25447c25fb3b49245a65c2972ddf00acf524db29bf9394ce79a17fdb08f1f135dd8b3296d4d83281381b039312a8fbb19a982bea2f55b71e7998c125aeea20eebbbd683b556f35bf250c0b07c7b59251b36610110aa506ddeb8400df688f2560fc9ab8c830786acd47a6e356ae9f9bbece3df3c4b6e083bde2a955fe583e79071c05e834828010496515ab6b675874566529d859a131b50b05bebaa197fe1920b42d1eff6fecc4aac538ab23f58f17b80d131cdb5e112c53c3bd6e4f0cf2df35f1e7d668b2ad1df")
+	require.NoError(t, err)
+	dsessionAT1Alpha, err := hex.DecodeString("e668c52c59cacc162dc6e36dcf42b6ee861a5765b45d8f83c25447c25fb3b492")
+	require.NoError(t, err)
+	dsessionAT1Beta, err := hex.DecodeString("45a65c2972ddf00acf524db29bf9394ce79a17fdb08f1f135dd8b3296d4d83281381b039312a8fbb19a982bea2f55b71e7998c125aeea20eebbbd683b556f35bf250c0b07c7b59251b36610110aa506ddeb8400df688f2560fc9ab8c830786acd47a6e356ae9f9bbece3df3c4b6e083bde2a955fe583e79071c05e8348280104")
+	require.NoError(t, err)
+	dsessionAT1Gamma, err := hex.DecodeString("96515ab6b675874566529d859a131b50")
+	require.NoError(t, err)
+	dsessionAT1Delta, err := hex.DecodeString("b05bebaa197fe1920b42d1eff6fecc4aac538ab23f58f17b80d131cdb5e112c53c3bd6e4f0cf2df35f1e7d668b2ad1df")
+	require.NoError(t, err)
+	dsessionAT2, err := hex.DecodeString("f1872b8c7d23cc9702b4b118d5bb60bfc25f5c54c177fd7929c4f5af0a68eae5")
+	require.NoError(t, err)
+	dsessionAT3, err := hex.DecodeString("74d2fe513e03e8fbe44385164e964f536e0c32c6af07ba2a71596a1fec33a711")
+	require.NoError(t, err)
+	dsessionBT1, err := hex.DecodeString("913b88079eab1350bf1bb9f8733dc001f32cf5438448c0adaa79d20537a9964eabfea79fc55ef3557b3e39fe01613b2d789e01d26a018d02e2388603a734110e478699d7e90292a393909009975889be1719aff29edbf6a3ec170589689840cf615fff22aa1b37abb9d9ba010953ee154c78f9e0eee28d625a7d2df73b5aa22b502b5040edb7fe8feb48b13541fb647974a3e5d24441e9021da8ad37fefeca053bfeccc3e28e9e9bc334ea418a31a2bbbd2a144eb045a30f91c3bd6cb39f82c703125f7620e44935f3ed76e540ca839980f208afa40d2773eb60b35ed8ac9a26")
+	require.NoError(t, err)
+	dsessionBT1Alpha, err := hex.DecodeString("913b88079eab1350bf1bb9f8733dc001f32cf5438448c0adaa79d20537a9964e")
+	require.NoError(t, err)
+	dsessionBT1Beta, err := hex.DecodeString("abfea79fc55ef3557b3e39fe01613b2d789e01d26a018d02e2388603a734110e478699d7e90292a393909009975889be1719aff29edbf6a3ec170589689840cf615fff22aa1b37abb9d9ba010953ee154c78f9e0eee28d625a7d2df73b5aa22b502b5040edb7fe8feb48b13541fb647974a3e5d24441e9021da8ad37fefeca05")
+	require.NoError(t, err)
+	dsessionBT1Gamma, err := hex.DecodeString("3bfeccc3e28e9e9bc334ea418a31a2bb")
+	require.NoError(t, err)
+	dsessionBT1Delta, err := hex.DecodeString("bd2a144eb045a30f91c3bd6cb39f82c703125f7620e44935f3ed76e540ca839980f208afa40d2773eb60b35ed8ac9a26")
+	require.NoError(t, err)
+	dsessionBT2, err := hex.DecodeString("12424018c8a15ca1d88247ef1285b3f8d36fffe33090a5af87b453acb2e7626e")
+	require.NoError(t, err)
+	dsessionBT3, err := hex.DecodeString("4e01f3a88fa886b41f786dab1ccf82f94a73082bbb8444c0408b875187355b9a")
 	require.NoError(t, err)
 
-	csidhPk := &[csidhPubKeyLen]byte{}
-	copy(csidhPk[:], dsessionCtidhPkBytes)
-	csidhSk := &[csidhPrivKeyLen]byte{}
-	copy(csidhSk[:], dsessionCtidhSkBytes)
-
-	passphrase, err := hex.DecodeString("9b0ac4fbd2e84a047b40695c391664890e570ee302a22c16c7025f52ed0586db")
+	dsessionDhSeedA, err := hex.DecodeString("324d226178bc2e0f625dcb91d83cb7fd8ed710755695559927fc75edff85a96b")
+	require.NoError(t, err)
+	dsessionDhSeedB, err := hex.DecodeString("79455c612276de0d2d511744936efc30c4cbb0e9715b737dbaca8d7d4acaf8b0")
 	require.NoError(t, err)
 
-	alicePayload, err := hex.DecodeString("00b7bf81a81bea5506669e6c00646beead875b9b1c5a8f30ea4a11ccf6ce2a98")
+	dsessionCtidhSeedSkA, err := hex.DecodeString("0200fd0000ff01fffe00fe000100fe00000001fefe00010000fd0001000000fd0000fe00ff0200fffdff010000ff000201ff00fe0100ff000000010000ff030000010100020101ff0002ff00ff0001000002000002ff0101ff010000ff01020100000000fe0000ff000100ff00ff000100ff000000ff000001ff02ff010000000100")
+	require.NoError(t, err)
+	dsessionCtidhSeedPkA, err := hex.DecodeString("45a65c2972ddf00acf524db29bf9394ce79a17fdb08f1f135dd8b3296d4d83281381b039312a8fbb19a982bea2f55b71e7998c125aeea20eebbbd683b556f35bf250c0b07c7b59251b36610110aa506ddeb8400df688f2560fc9ab8c830786acd47a6e356ae9f9bbece3df3c4b6e083bde2a955fe583e79071c05e8348280104")
 	require.NoError(t, err)
 
-	bobPayload, err := hex.DecodeString("5c0d6c7b18d41aa1bb35dcf72f91bf9da292278c6057c8525df7e76ee4fa0764")
+	dsessionCtidhSeedSkB, err := hex.DecodeString("01ff00fffd0100000004ff040000000002020100ff0002ff000000020001fd0000ff00ff010301000103000000000000fe03ff0000ffffff02010000ff00fd01010002ff00fe010100ff01ffffff00ff0100010100030100000000000100fc00fe00000001fe0000010000ff000200010100000000000200fe01ff00ff0001000000")
+	require.NoError(t, err)
+	dsessionCtidhSeedPkB, err := hex.DecodeString("abfea79fc55ef3557b3e39fe01613b2d789e01d26a018d02e2388603a734110e478699d7e90292a393909009975889be1719aff29edbf6a3ec170589689840cf615fff22aa1b37abb9d9ba010953ee154c78f9e0eee28d625a7d2df73b5aa22b502b5040edb7fe8feb48b13541fb647974a3e5d24441e9021da8ad37fefeca05")
 	require.NoError(t, err)
 
-	seed, err := hex.DecodeString("1234")
+	dSessionPassphrase := []byte("reunion is for rendezvous")
+
+	createDeterministicSesson := func(passphrase, payload, seed []byte) *Session {
+		var ctidhPubKey *[csidhPubKeyLen]byte
+		var ctidhPrivKey *[csidhPrivKeyLen]byte
+		var dhSeed *[32]byte
+		var gammaSeed []byte
+		var deltaSeed []byte
+		var dummySeed []byte
+		var tweak uint8
+
+		if hmac.Equal(seed, dsessionSeedA) {
+			dhSeed = &[32]byte{}
+			copy(dhSeed[:], dsessionDhSeedA)
+
+			ctidhPubKey = &[csidhPubKeyLen]byte{}
+			copy(ctidhPubKey[:], dsessionCtidhSeedPkA)
+			ctidhPrivKey = &[csidhPrivKeyLen]byte{}
+			copy(ctidhPrivKey[:], dsessionCtidhSeedSkA)
+
+			gammaSeed = dsessionGammaSeedA
+			deltaSeed = dsessionDeltaSeedA
+			dummySeed = dsessionDummySeedA
+			tweak = dsessionTweakA
+		} else if hmac.Equal(seed, dsessionSeedB) {
+			dhSeed = &[32]byte{}
+			copy(dhSeed[:], dsessionDhSeedB)
+
+			ctidhPubKey = &[csidhPubKeyLen]byte{}
+			copy(ctidhPubKey[:], dsessionCtidhSeedPkB)
+			ctidhPrivKey = &[csidhPrivKeyLen]byte{}
+			copy(ctidhPrivKey[:], dsessionCtidhSeedSkB)
+
+			gammaSeed = dsessionGammaSeedB
+			deltaSeed = dsessionDeltaSeedB
+			dummySeed = dsessionDummySeedB
+			tweak = dsessionTweakB
+		} else {
+			panic("wrong seed")
+		}
+
+		salt := &[32]byte{}
+		copy(salt[:], DefaultHkdfSalt)
+
+		return CreateSession(salt, passphrase, payload, dhSeed, ctidhPubKey, ctidhPrivKey, gammaSeed[:], deltaSeed[:], dummySeed[:], tweak)
+	}
+
+	alice := createDeterministicSesson(dSessionPassphrase, dsessionPayloadA, dsessionSeedA)
+	bob := createDeterministicSesson(dSessionPassphrase, dsessionPayloadB, dsessionSeedB)
+
+	// self.AT2 = A.process_t1(B.t1)
+	bobT1Blob, err := bob.T1.MarshalBinary()
+	require.NoError(t, err)
+	aT2, err := alice.ProcessT1(bobT1Blob)
 	require.NoError(t, err)
 
-	aliceSession := CreateDeterministicSesson(passphrase, alicePayload, seed, csidhPk, csidhSk)
-	at1, err := aliceSession.T1.MarshalBinary()
+	// self.BT2 = B.process_t1(A.t1)
+	aliceT1Blob, err := alice.T1.MarshalBinary()
+	require.NoError(t, err)
+	bT2, err := bob.ProcessT1(aliceT1Blob)
 	require.NoError(t, err)
 
-	expectedAt1, err := hex.DecodeString("b7e50c69c1576ac0c38aa770facf18f86e837de3a265ba1b6776a4d64526c546214e6df3a72dad41d7218a65a691198ec1d13c040b100abbd8f72519bcfe597bc5b7012111e8b0e4bd59037650c24c047677ccccbe6f0230730ba7735edb73f03aee4c4115c4f0c9376d4ce59d311e90391fa65061df52d7ac6b4cd09b7e93a530a6fef8ddc407f67323ee079abe15669e9b15d9d4fec0e542ff69994234c609520e55fc3d434366794d59a0d672d7fd3dbad2eed6713de60de1098dc99bc2d24b24d1fdedb856c9104690350d0917d173de3ff6d4d5e6957305cd761eb4bdc2")
-	require.NoError(t, err)
-	t.Logf("Alice T1: %x", at1)
-	require.Equal(t, at1, expectedAt1)
+	// self.AT3, a_isdummy = A.process_t2(B.t1.id, self.BT2)
+	bT1Id := bob.T1.ID()
+	aT3, aIsDummy := alice.ProcessT2(&bT1Id, bT2)
 
-	bobSession := CreateDeterministicSesson(passphrase, bobPayload, seed, csidhPk, csidhSk)
-	bt1, err := bobSession.T1.MarshalBinary()
-	require.NoError(t, err)
+	// self.BT3, b_isdummy = B.process_t2(A.t1.id, self.AT2)
+	aT1Id := alice.T1.ID()
+	bT3, bIsDummy := bob.ProcessT2(&aT1Id, aT2)
 
-	expectedBt1, err := hex.DecodeString("54ad5d6ca02c133782ffbbc26027d6d096ffb48c0df8c4bc469ba7b50881ea6bce6f8ba1e460862933a85b9b6a190adc6648cdd61a648e570d1b34b7e5830057c8117e95c57d7c1da083ad9d39ec2c367856b8dbe164f7f964c53da076f690edb1e8f4e276e757e074545eda23a60397227cf5d8d63d4ded364d01042402b9c0135cf19897d79ec764a37c579ebf3aaaee10926238dc06bc4d7b89b3b67cd7046b350f40fbb821fae6ec563366f419de62d3bdef94405a6f39595342fcb9fa6261185db123cd0e1d367097cf80f47f0acb9ba73062f605abc187556b65a9bc23")
-	require.NoError(t, err)
-	require.Equal(t, bt1, expectedBt1)
+	require.Equal(t, alice.T1.Alpha, dsessionAT1Alpha)
+	require.Equal(t, alice.T1.Beta, dsessionAT1Beta)
+	require.Equal(t, alice.T1.Gamma, dsessionAT1Gamma)
+	require.Equal(t, alice.T1.Delta, dsessionAT1Delta)
+	require.Equal(t, aliceT1Blob, dsessionAT1)
+
+	// assert not a_isdummy and not b_isdummy
+	require.False(t, aIsDummy)
+
+	require.False(t, bIsDummy)
+
+	// A.process_t3(B.t1.id, self.BT3)
+	// B.process_t3(A.t1.id, self.AT3)
+	alice.ProcessT3(&bT1Id, bT3)
+	bob.ProcessT3(&aT1Id, aT3)
+
+	require.Equal(t, aT2, dsessionAT2)
+	require.Equal(t, aT3, dsessionAT3)
+
+	require.Equal(t, bobT1Blob, dsessionBT1)
+	require.Equal(t, bob.T1.Alpha, dsessionBT1Alpha)
+	require.Equal(t, bob.T1.Beta, dsessionBT1Beta)
+	require.Equal(t, bob.T1.Gamma, dsessionBT1Gamma)
+	require.Equal(t, bob.T1.Delta, dsessionBT1Delta)
+
+	require.Equal(t, bT2, dsessionBT2)
+	require.Equal(t, bT3, dsessionBT3)
 }

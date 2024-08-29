@@ -11,6 +11,5 @@ var (
 	DefaultAeadNonce = bytes.Repeat([]byte{0x00}, 24)
 	DefaultArgonSalt = bytes.Repeat([]byte{0x00}, 32)
 	DefaultHkdfSalt  = bytes.Repeat([]byte{0x00}, 32)
-
 	DefaultCtidhSize = 1024
 )
