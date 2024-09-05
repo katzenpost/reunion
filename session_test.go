@@ -56,13 +56,23 @@ func TestDeterministicSession(t *testing.T) {
 	require.NoError(t, err)
 	dsessionSeedB := append([]byte("bob"), dsessionSeed...)
 	require.NoError(t, err)
+
+	t.Logf("dsessionSeedA %x", dsessionSeedA)
+	t.Logf("dsessionSeedB %x", dsessionSeedB)
+
 	// dsessionPassphrase := []byte("reunion is for rendezvous")
-	dsessionGammaSeedA := []byte("6ba51aada3aca321534d73733860b59ea63a9746dc0bd3b00c09f5eb6feb508a")
-	dsessionGammaSeedB := []byte("75884ac7ad53827bb7bf280bc016191bcdfb6ef80c434e8155ef102e8db258ce")
-	dsessionDeltaSeedA := []byte("d5d0587357083f14ba559f775432b948f30e8e658ff866e2873b7768b3fa8ba5")
-	dsessionDeltaSeedB := []byte("33f1732459211686a4acf28f0cccaa0b8cb9f57b5398765481cd073297a38449")
-	dsessionDummySeedA := []byte("a99f86fb345e9d833ce5534df39beb076f48c4cb62cdb940e23324df510065ea")
-	dsessionDummySeedB := []byte("9e7a7f9f95146604a206a1a577f6d34dc9550054ae635d955eef9b33a8a899b9")
+	dsessionGammaSeedA, err := hex.DecodeString("6ba51aada3aca321534d73733860b59ea63a9746dc0bd3b00c09f5eb6feb508a")
+	require.NoError(t, err)
+	dsessionGammaSeedB, err := hex.DecodeString("75884ac7ad53827bb7bf280bc016191bcdfb6ef80c434e8155ef102e8db258ce")
+	require.NoError(t, err)
+	dsessionDeltaSeedA, err := hex.DecodeString("d5d0587357083f14ba559f775432b948f30e8e658ff866e2873b7768b3fa8ba5")
+	require.NoError(t, err)
+	dsessionDeltaSeedB, err := hex.DecodeString("33f1732459211686a4acf28f0cccaa0b8cb9f57b5398765481cd073297a38449")
+	require.NoError(t, err)
+	dsessionDummySeedA, err := hex.DecodeString("a99f86fb345e9d833ce5534df39beb076f48c4cb62cdb940e23324df510065ea")
+	require.NoError(t, err)
+	dsessionDummySeedB, err := hex.DecodeString("9e7a7f9f95146604a206a1a577f6d34dc9550054ae635d955eef9b33a8a899b9")
+	require.NoError(t, err)
 	dsessionTweakA := uint8(32)
 	dsessionTweakB := uint8(243)
 	dsessionPayloadA, err := hex.DecodeString("f06b1a5db24a0394fb28a53de02059fc34166424e40e64d7a857efdc38f158f1")
@@ -160,8 +170,22 @@ func TestDeterministicSession(t *testing.T) {
 		return CreateSession(salt, passphrase, payload, dhSeed, ctidhPubKey, ctidhPrivKey, gammaSeed[:], deltaSeed[:], dummySeed[:], tweak)
 	}
 
+	t.Logf("Alice starting deterministic session with:\n")
+	t.Logf("dSessionPassphrase: %s", dSessionPassphrase)
+	t.Logf("dsessionPayloadA: %x", dsessionPayloadA)
+	t.Logf("dsessionSeedA: %x", dsessionSeedA)
+
 	alice := createDeterministicSesson(dSessionPassphrase, dsessionPayloadA, dsessionSeedA)
+
+	t.Logf("Bob starting deterministic session with:\n")
+	t.Logf("dSessionPassphrase: %s", dSessionPassphrase)
+	t.Logf("dsessionPayloadA: %x", dsessionPayloadB)
+	t.Logf("dsessionSeedA: %x", dsessionSeedB)
+
 	bob := createDeterministicSesson(dSessionPassphrase, dsessionPayloadB, dsessionSeedB)
+
+	t.Logf("Alice pdk: %x", alice.Pdk[:])
+	t.Logf("Bob pdk: %x", bob.Pdk[:])
 
 	// self.AT2 = A.process_t1(B.t1)
 	bobT1Blob, err := bob.T1.MarshalBinary()
@@ -183,15 +207,14 @@ func TestDeterministicSession(t *testing.T) {
 	aT1Id := alice.T1.ID()
 	bT3, bIsDummy := bob.ProcessT2(&aT1Id, aT2)
 
-	require.Equal(t, alice.T1.Alpha, dsessionAT1Alpha)
-	require.Equal(t, alice.T1.Beta, dsessionAT1Beta)
-	require.Equal(t, alice.T1.Gamma, dsessionAT1Gamma)
-	require.Equal(t, alice.T1.Delta, dsessionAT1Delta)
+	require.Equal(t, alice.T1.Alpha[:], dsessionAT1Alpha)
+	require.Equal(t, alice.T1.Beta[:], dsessionAT1Beta)
+	require.Equal(t, alice.T1.Gamma[:], dsessionAT1Gamma)
+	require.Equal(t, alice.T1.Delta[:], dsessionAT1Delta)
 	require.Equal(t, aliceT1Blob, dsessionAT1)
 
 	// assert not a_isdummy and not b_isdummy
 	require.False(t, aIsDummy)
-
 	require.False(t, bIsDummy)
 
 	// A.process_t3(B.t1.id, self.BT3)

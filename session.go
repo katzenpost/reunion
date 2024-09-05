@@ -4,6 +4,8 @@
 package reunion
 
 import (
+	"golang.org/x/crypto/sha3"
+
 	"github.com/katzenpost/hpqc/nike/schemes"
 	"github.com/katzenpost/reunion/primitives"
 )
@@ -113,7 +115,11 @@ func NewPeer(t1 *T1, session *Session) (*Peer, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.CsidhSs = s.DeriveSecret(sessionCsidhSk, csidhPk)
+
+	csidhSs := s.DeriveSecret(sessionCsidhSk, csidhPk)
+	shakeHash := make([]byte, len(csidhSs))
+	sha3.ShakeSum256(shakeHash, csidhSs)
+	p.CsidhSs = shakeHash
 
 	// Step 20: T2kitx ← H(pdkA, pdkBi, dh1ssi, dh2ssi)
 	p.T2KeyTx = primitives.Hash(append(session.AlphaKey[:], append(p.AlphaKey[:], append(p.DhSs[:], p.CsidhSs[:]...)...)...))
@@ -158,7 +164,7 @@ func (p *Peer) ProcessT2(t2 []byte) ([]byte, bool) {
 		block := &[32]byte{}
 		copy(block[:], p.Session.SkDelta)
 		out := primitives.AeadEcbEncrypt(t3KeyTx, block)
-		return out[:], true
+		return out[:], false
 	}
 	// Step 31: else
 	// Step 32: T3Ai ← H(RNG(32))
@@ -209,7 +215,7 @@ func CreateSession(
 	dhSeed *[32]byte,
 	ctidhPubKey *[csidhPubKeyLen]byte,
 	ctidhPrivKey *[csidhPrivKeyLen]byte,
-	gammeSeed,
+	gammaSeed,
 	deltaSeed,
 	dummySeed []byte, tweak byte) *Session {
 
@@ -219,7 +225,7 @@ func CreateSession(
 	pdk := &[32]byte{}
 	copy(pdk[:], pdkRaw)
 
-	skGamma := primitives.Hash(append(pdk[:], append(gammeSeed, payload...)...))
+	skGamma := primitives.Hash(append(pdk[:], append(gammaSeed, payload...)...))
 	skDelta := primitives.Hash(append(pdk[:], append(deltaSeed, payload...)...))
 
 	// t1 beta is the unencrypted csidh pk
@@ -283,6 +289,7 @@ func (s *Session) ProcessT1(t1Bytes []byte) ([]byte, error) {
 	peer, ok := s.Peers[t1.ID()]
 	if !ok {
 		peer, err = NewPeer(t1, s)
+		s.Peers[t1.ID()] = peer
 		if err != nil {
 			return nil, err
 		}
