@@ -232,3 +232,99 @@ func TestDeterministicSession(t *testing.T) {
 	require.Equal(t, bT2, dsessionBT2)
 	require.Equal(t, bT3, dsessionBT3)
 }
+
+func TestNonDeterministicSession(t *testing.T) {
+
+	aliceSalt := &[32]byte{}
+	_, err := rand.Reader.Read(aliceSalt[:])
+	require.NoError(t, err)
+
+	alicePassphrase := []byte("alice's super duper secret passphrase")
+	alicePayload := []byte("alice's secret encrypted payload")
+
+	aliceDhSeed := &[32]byte{}
+	_, err = rand.Reader.Read(aliceDhSeed[:])
+	require.NoError(t, err)
+
+	s := schemes.ByName("ctidh1024")
+	aliceCtidhPubKey, aliceCtidhPrivKey, err := s.GenerateKeyPair()
+	require.NoError(t, err)
+	aliceCtidhPubKeyBytes := &[csidhPubKeyLen]byte{}
+	copy(aliceCtidhPubKeyBytes[:], aliceCtidhPubKey.Bytes())
+	aliceCtidhPrivKeyBytes := &[csidhPrivKeyLen]byte{}
+	copy(aliceCtidhPrivKeyBytes[:], aliceCtidhPrivKey.Bytes())
+
+	aliceGammaSeed := make([]byte, 32)
+	_, err = rand.Reader.Read(aliceGammaSeed[:])
+	require.NoError(t, err)
+
+	aliceDeltaSeed := make([]byte, 32)
+	_, err = rand.Reader.Read(aliceDeltaSeed[:])
+	require.NoError(t, err)
+
+	aliceDummySeed := make([]byte, 32)
+	_, err = rand.Reader.Read(aliceDummySeed[:])
+	require.NoError(t, err)
+
+	aliceTweak := byte(123)
+
+	alice := CreateSession(aliceSalt, alicePassphrase, alicePayload, aliceDhSeed, aliceCtidhPubKeyBytes, aliceCtidhPrivKeyBytes, aliceGammaSeed, aliceDeltaSeed, aliceDummySeed, aliceTweak)
+
+	bobSalt := aliceSalt
+	bobPassphrase := alicePassphrase
+	bobPayload := []byte("bob's secret encrypted payload")
+
+	bobDhSeed := &[32]byte{}
+	_, err = rand.Reader.Read(bobDhSeed[:])
+	require.NoError(t, err)
+
+	bobCtidhPubKey, bobCtidhPrivKey, err := s.GenerateKeyPair()
+	require.NoError(t, err)
+	bobCtidhPubKeyBytes := &[csidhPubKeyLen]byte{}
+	copy(bobCtidhPubKeyBytes[:], bobCtidhPubKey.Bytes())
+	bobCtidhPrivKeyBytes := &[csidhPrivKeyLen]byte{}
+	copy(bobCtidhPrivKeyBytes[:], bobCtidhPrivKey.Bytes())
+
+	bobGammaSeed := make([]byte, 32)
+	_, err = rand.Reader.Read(bobGammaSeed[:])
+	require.NoError(t, err)
+
+	bobDeltaSeed := make([]byte, 32)
+	_, err = rand.Reader.Read(bobDeltaSeed[:])
+	require.NoError(t, err)
+
+	bobDummySeed := make([]byte, 32)
+	_, err = rand.Reader.Read(bobDummySeed[:])
+	require.NoError(t, err)
+
+	bobTweak := byte(123)
+
+	bob := CreateSession(bobSalt, bobPassphrase, bobPayload, bobDhSeed, bobCtidhPubKeyBytes, bobCtidhPrivKeyBytes, bobGammaSeed, bobDeltaSeed, bobDummySeed, bobTweak)
+
+	// begin protocol
+
+	bobT1Blob, err := bob.T1.MarshalBinary()
+	require.NoError(t, err)
+	aT2, err := alice.ProcessT1(bobT1Blob)
+	require.NoError(t, err)
+
+	aliceT1Blob, err := alice.T1.MarshalBinary()
+	require.NoError(t, err)
+	bT2, err := bob.ProcessT1(aliceT1Blob)
+	require.NoError(t, err)
+
+	bT1Id := bob.T1.ID()
+	aT3, aIsDummy := alice.ProcessT2(&bT1Id, bT2)
+
+	aT1Id := alice.T1.ID()
+	bT3, bIsDummy := bob.ProcessT2(&aT1Id, aT2)
+
+	require.False(t, aIsDummy)
+	require.False(t, bIsDummy)
+
+	aliceDone := alice.ProcessT3(&bT1Id, bT3)
+	bobDone := bob.ProcessT3(&aT1Id, aT3)
+
+	require.Equal(t, bobDone, alicePayload)
+	require.Equal(t, aliceDone, bobPayload)
+}
