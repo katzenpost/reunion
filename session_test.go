@@ -165,8 +165,6 @@ func TestDeterministicSession(t *testing.T) {
 		}
 
 		salt := &[32]byte{}
-		copy(salt[:], DefaultHkdfSalt)
-
 		return CreateSession(salt, passphrase, payload, dhSeed, ctidhPubKey, ctidhPrivKey, gammaSeed[:], deltaSeed[:], dummySeed[:], tweak)
 	}
 
