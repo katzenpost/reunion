@@ -144,7 +144,7 @@ func (p *Peer) ProcessT2(t2 []byte) ([]byte, bool) {
 	// sk_gamma = prp_decrypt(peer.t2key_rx, t2)
 	t2Ar := &[32]byte{}
 	copy(t2Ar[:], t2)
-	skGamma := primitives.AeadEcbEncrypt(p.T2KeyRx, t2Ar)
+	skGamma := primitives.AeadEcbDecrypt(p.T2KeyRx, t2Ar)
 
 	// Step 27: if “” = aead-dec(sk B i γ , T 1 B i γ , RS) then
 	// aead_res = aead_decrypt(sk_gamma, peer.t1.gamma, peer.session.salt)

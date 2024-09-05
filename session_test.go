@@ -225,11 +225,11 @@ func TestDeterministicSession(t *testing.T) {
 	require.Equal(t, aT2, dsessionAT2)
 	require.Equal(t, aT3, dsessionAT3)
 
-	require.Equal(t, bobT1Blob, dsessionBT1)
-	require.Equal(t, bob.T1.Alpha, dsessionBT1Alpha)
-	require.Equal(t, bob.T1.Beta, dsessionBT1Beta)
-	require.Equal(t, bob.T1.Gamma, dsessionBT1Gamma)
-	require.Equal(t, bob.T1.Delta, dsessionBT1Delta)
+	require.Equal(t, bobT1Blob, dsessionBT1[:])
+	require.Equal(t, bob.T1.Alpha[:], dsessionBT1Alpha)
+	require.Equal(t, bob.T1.Beta[:], dsessionBT1Beta)
+	require.Equal(t, bob.T1.Gamma[:], dsessionBT1Gamma)
+	require.Equal(t, bob.T1.Delta[:], dsessionBT1Delta)
 
 	require.Equal(t, bT2, dsessionBT2)
 	require.Equal(t, bT3, dsessionBT3)
