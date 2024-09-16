@@ -18,10 +18,12 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func Hash(b []byte) *[32]byte {
+const HashSize = 32
+
+func Hash(b []byte) *[HashSize]byte {
 	out := blake2b.Sum512(b)
-	ret := [32]byte{}
-	copy(ret[:], out[:32])
+	ret := [HashSize]byte{}
+	copy(ret[:], out[:HashSize])
 	return &ret
 }
 

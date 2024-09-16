@@ -18,9 +18,13 @@ const (
 	alphaLen = 32
 	betaLen  = csidhPubKeyLen
 	gammaLen = 16
-)
+	deltaLen = 3500
 
-// DefaultHKDFSalt
+	PayloadSize      = deltaLen
+	Type1MessageSize = alphaLen + betaLen + gammaLen + deltaLen
+	Type2MessageSize = 32
+	Type3MessageSize = 32
+)
 
 type T1 struct {
 	Alpha [alphaLen]byte // X25519 pub key
