@@ -15,20 +15,20 @@ const (
 	csidhPubKeyLen  = 128
 	csidhPrivKeyLen = 130
 
-	alphaLen = 32
-	betaLen  = csidhPubKeyLen
+	AlphaLen = 32
+	BetaLen  = csidhPubKeyLen
 	gammaLen = 16
 	deltaLen = 3500
 
 	PayloadSize      = deltaLen
-	Type1MessageSize = alphaLen + betaLen + gammaLen + deltaLen
+	Type1MessageSize = AlphaLen + BetaLen + gammaLen + deltaLen
 	Type2MessageSize = 32
 	Type3MessageSize = 32
 )
 
 type T1 struct {
-	Alpha [alphaLen]byte // X25519 pub key
-	Beta  [betaLen]byte  // CTIDH 1024 pub key
+	Alpha [AlphaLen]byte // X25519 pub key
+	Beta  [BetaLen]byte  // CTIDH 1024 pub key
 	Gamma [gammaLen]byte // MAC
 	Delta []byte         // ciphertext
 }
@@ -52,11 +52,11 @@ func (t *T1) MarshalBinary() (data []byte, err error) {
 }
 
 func (t *T1) UnmarshalBinary(data []byte) error {
-	copy(t.Alpha[:], data[:alphaLen])
-	copy(t.Beta[:], data[alphaLen:alphaLen+betaLen])
-	copy(t.Gamma[:], data[alphaLen+betaLen:alphaLen+betaLen+gammaLen])
-	t.Delta = make([]byte, len(data[alphaLen+betaLen+gammaLen:]))
-	copy(t.Delta[:], data[alphaLen+betaLen+gammaLen:])
+	copy(t.Alpha[:], data[:AlphaLen])
+	copy(t.Beta[:], data[AlphaLen:AlphaLen+BetaLen])
+	copy(t.Gamma[:], data[AlphaLen+BetaLen:AlphaLen+BetaLen+gammaLen])
+	t.Delta = make([]byte, len(data[AlphaLen+BetaLen+gammaLen:]))
+	copy(t.Delta[:], data[AlphaLen+BetaLen+gammaLen:])
 	return nil
 }
 
