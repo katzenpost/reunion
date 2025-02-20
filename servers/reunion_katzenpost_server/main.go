@@ -28,6 +28,7 @@ import (
 	"github.com/katzenpost/reunion/server"
 )
 
+// Entrypoint for the Katzenpost mix service CBOR plugin system.
 func main() {
 	logPath := flag.String("log", "", "Log file path. Default STDOUT.")
 	logLevel := flag.String("log_level", "DEBUG", "logging level could be set to: DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL")

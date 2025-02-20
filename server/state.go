@@ -524,6 +524,8 @@ func (s *ReunionState) Unmarshal(data []byte) error {
 	return nil
 }
 
+// Append a T1 to the REUNION state and return nil or return an error that
+// indicates the T1 was already stored.
 func (s *ReunionState) appendT1(sendT1 *commands.SendT1) error {
 	h := sha256.New()
 	h.Write(sendT1.Payload)
@@ -539,6 +541,8 @@ func (s *ReunionState) appendT1(sendT1 *commands.SendT1) error {
 	return nil
 }
 
+// Append a T2 to the REUNION state and return nil or return an error that
+// indicates an invalid list type.
 func (s *ReunionState) appendT2(sendT2 *commands.SendT2) error {
 	l, ok := s.messageMap.Load(sendT2.DstT1Hash)
 	var messageList *LockedList
@@ -558,6 +562,8 @@ func (s *ReunionState) appendT2(sendT2 *commands.SendT2) error {
 	return nil
 }
 
+// Append a T3 to the REUNION state and return nil or return an error that
+// indicates an invalid list type.
 func (s *ReunionState) appendT3(sendT2 *commands.SendT3) error {
 	l, ok := s.messageMap.Load(sendT2.DstT1Hash)
 	var messageList *LockedList

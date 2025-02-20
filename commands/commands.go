@@ -79,6 +79,8 @@ func (s *FetchState) ToBytes() []byte {
 	return out
 }
 
+// Process state update serialized as bytes. Return a two-tuple of nil and an
+// invalid command error or a new FetchState and nil.
 func fetchStateFromBytes(b []byte) (Command, error) {
 	if len(b) != fetchStateLength {
 		return nil, errInvalidCommand
@@ -119,6 +121,9 @@ func (s *StateResponse) ToBytes() []byte {
 	return out
 }
 
+// Process a response encoded as bytes and return a two-tuple of a new
+// StateResponse object and nil or nil and an error indicating an invalid
+// command.
 func stateResponseFromBytes(b []byte) (Command, error) {
 	s := new(StateResponse)
 	s.ErrorCode = b[1]
@@ -152,6 +157,8 @@ func (s *SendT1) ToBytes() []byte {
 	return out
 }
 
+// Send a T1 protocol message serialized as bytes and return a two-tuple of nil
+// and an invalid command error or a new SendT1 and nil.
 func sendT1FromBytes(b []byte) (Command, error) {
 	if len(b) != sendT1Length {
 		return nil, errInvalidCommand
@@ -188,6 +195,8 @@ func (s *SendT2) ToBytes() []byte {
 	return out
 }
 
+// Send a T2 protocol message serialized as bytes and return a two-tuple of nil
+// and an invalid command error or a new SendT2 and nil.
 func sendT2FromBytes(b []byte) (Command, error) {
 	if len(b) != sendT2Length {
 		return nil, errInvalidCommand
@@ -230,6 +239,8 @@ func (s *SendT3) ToBytes() []byte {
 	return out
 }
 
+// Send a T3 protocol message serialized as bytes and return a two-tuple of nil
+// and an invalid command error or a new SendT3 and nil.
 func sendT3FromBytes(b []byte) (Command, error) {
 	if len(b) != sendT3Length {
 		return nil, errInvalidCommand
@@ -270,6 +281,9 @@ func (s *MessageResponse) ToBytes() []byte {
 	return out
 }
 
+// Process a message response encoded as bytes and return a two-tuple of nil
+// and an error indicating an invalid command or a new MessageResponse object
+// and nil.
 func messageResponseFromBytes(b []byte) (Command, error) {
 	if len(b) != messageResponseLength {
 		return nil, errInvalidCommand

@@ -103,10 +103,12 @@ func (s *Server) GetNewLogger(name string) *logging.Logger {
 	return s.logBackend.GetLogger(name)
 }
 
+// Increment the Server's dirty entries by one.
 func (s *Server) incrementDirtyEntryCount() {
 	atomic.AddUint64(&s.nDirtyEntries, 1)
 }
 
+// Fetch the Server State, return nil and an error or the response and nil.
 func (s *Server) fetchState(fetchCmd *commands.FetchState) (*commands.StateResponse, error) {
 	state, err := s.states.GetStateFromEpoch(fetchCmd.Epoch)
 	if err != nil {
@@ -145,6 +147,7 @@ func (s *Server) fetchState(fetchCmd *commands.FetchState) (*commands.StateRespo
 	return response, nil
 }
 
+// Send a T1, return nil and an error or a response and nil.
 func (s *Server) sendT1(sendT1 *commands.SendT1) (*commands.MessageResponse, error) {
 	state, err := s.states.GetStateFromEpoch(sendT1.Epoch)
 	if err != nil {
@@ -161,6 +164,7 @@ func (s *Server) sendT1(sendT1 *commands.SendT1) (*commands.MessageResponse, err
 	return response, nil
 }
 
+// Send a T2, return nil and an error or a response and nil.
 func (s *Server) sendT2(sendT2 *commands.SendT2) (*commands.MessageResponse, error) {
 	state, err := s.states.GetStateFromEpoch(sendT2.Epoch)
 	if err != nil {
@@ -177,6 +181,7 @@ func (s *Server) sendT2(sendT2 *commands.SendT2) (*commands.MessageResponse, err
 	return response, nil
 }
 
+// Send a T3, return nil and an error or a response and nil.
 func (s *Server) sendT3(sendT3 *commands.SendT3) (*commands.MessageResponse, error) {
 	state, err := s.states.GetStateFromEpoch(sendT3.Epoch)
 	if err != nil {
@@ -262,10 +267,13 @@ func (s *Server) ProcessQuery(command commands.Command) (commands.Command, error
 	return response, nil
 }
 
+// Perform an atomic write of the State to a file.
 func (s *Server) doFlush() error {
 	return s.states.AtomicWriteToFile(s.stateFilePath)
 }
 
+// Return if there is nothing to be done. Otherwise, attempt to flush and log
+// failures.
 func (s *Server) maybeFlush() {
 	nEntries := atomic.LoadUint64(&s.nDirtyEntries)
 	if nEntries == 0 {
@@ -283,6 +291,8 @@ func (s *Server) maybeFlush() {
 	atomic.StoreUint64(&s.nDirtyEntries, 0)
 }
 
+// Server workers of the world unite, we have nothing to lose but our garbage
+// collected epochs.
 func (s *Server) worker() {
 	defer s.doFlush()
 
