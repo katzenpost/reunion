@@ -26,6 +26,13 @@ const (
 	Type3MessageSize = 32
 )
 
+// T1 is the first protocol message that contains the message to be sent as
+// well as relevant cryptographic information.
+// T1 message that consists of an Alpha, Beta, Gamma, and Delta items as bytes.
+// Alpha contains a 32 byte X25519 public key encoded with Elligator.
+// Beta contains a 128 byte CTIDH1024 public key.
+// Gamma contains a 16 byte MAC.
+// Delta contains a 3500 AEAD encrypted payload message.
 type T1 struct {
 	Alpha [AlphaLen]byte // X25519 pub key
 	Beta  [BetaLen]byte  // CTIDH 1024 pub key
@@ -33,6 +40,8 @@ type T1 struct {
 	Delta []byte         // ciphertext
 }
 
+// ID returns a cryptographic hash of a T1 to uniquely identify Peers in the
+// REUNION protocol run on a per epoch basis.
 func (t *T1) ID() [32]byte {
 	blob, err := t.MarshalBinary()
 	if err != nil {
@@ -42,6 +51,7 @@ func (t *T1) ID() [32]byte {
 	return *id
 }
 
+// Returns a serialization of all T1 fields as bytes.
 func (t *T1) MarshalBinary() (data []byte, err error) {
 	out := []byte{}
 	out = append(out, t.Alpha[:]...)
@@ -51,6 +61,7 @@ func (t *T1) MarshalBinary() (data []byte, err error) {
 	return out, nil
 }
 
+// Populate a T1's fields from serialized byte data.
 func (t *T1) UnmarshalBinary(data []byte) error {
 	copy(t.Alpha[:], data[:AlphaLen])
 	copy(t.Beta[:], data[AlphaLen:AlphaLen+BetaLen])
@@ -60,6 +71,8 @@ func (t *T1) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// Peer state structure including REUNION protocol messages as well as public
+// and respective private key data.
 type Peer struct {
 	T1       *T1
 	Session  *Session
@@ -77,6 +90,7 @@ type Peer struct {
 	Payload  []byte
 }
 
+// Create a new Peer and store their T1 and Session in a Peer structure.
 func NewPeer(t1 *T1, session *Session) (*Peer, error) {
 	p := &Peer{}
 	p.T1 = t1
@@ -176,6 +190,8 @@ func (p *Peer) ProcessT2(t2 []byte) ([]byte, bool) {
 	return p.Session.DummyHKDF.Expand(append(t1id[:], t2...), 32), true
 }
 
+// ProcessT3 implements Phase 4 of Algorithm 1. It returns nil or the Peer's
+// payload as bytes.
 func (p *Peer) ProcessT3(t3 []byte) []byte {
 	// Step 36: for each new T3Bi do ▷ Phase 4: Process T3; decrypt δ
 	if p.T2Rx == nil {
@@ -196,6 +212,9 @@ func (p *Peer) ProcessT3(t3 []byte) []byte {
 	return p.Payload
 }
 
+// Session structure for storing state about a session including Peer states,
+// various protocol parameters, as well as public and respective private key
+// data.
 type Session struct {
 	Peers     map[[32]byte]*Peer
 	Results   [][]byte
@@ -212,6 +231,8 @@ type Session struct {
 	DummyHKDF *primitives.HKDF
 }
 
+// Create and populate a Session structure for a protocol run within one
+// epoch.
 func CreateSession(
 	salt *[32]byte,
 	passphrase,
@@ -284,6 +305,9 @@ func CreateSession(
 	}
 }
 
+// Process a Peer's T1 protocol message by deserializing and creating or
+// updating a respective Peer structure based on a cryptographic hash of the T1
+// message.
 func (s *Session) ProcessT1(t1Bytes []byte) ([]byte, error) {
 	t1 := new(T1)
 	err := t1.UnmarshalBinary(t1Bytes)
@@ -301,6 +325,10 @@ func (s *Session) ProcessT1(t1Bytes []byte) ([]byte, error) {
 	return peer.T2Tx, nil
 }
 
+// Process a Peer's T2 protocol message which is a response to a T1 and in turn
+// generates a T3. The T3 may be a true T3 that is encoded with Elligator to be
+// indistinguishable from a uniformly random bit string or a dummy T3 that is
+// also indistinguishable from a uniformly random bit string.
 func (s *Session) ProcessT2(t1id *[32]byte, t2 []byte) ([]byte, bool) {
 	peer, ok := s.Peers[*t1id]
 	if ok {

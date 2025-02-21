@@ -18,8 +18,10 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// HashSize is the size of the blob returned by the Hash function.
 const HashSize = 32
 
+// Hash uses blake2b and returns a pointer to a 32 byte array.
 func Hash(b []byte) *[HashSize]byte {
 	out := blake2b.Sum512(b)
 	ret := [HashSize]byte{}
@@ -27,14 +29,17 @@ func Hash(b []byte) *[HashSize]byte {
 	return &ret
 }
 
+// Argon2 computes an argon2 password hash from a password and a salt.
 func Argon2(password []byte, salt *[32]byte) []byte {
 	return argon2.Key(password, salt[:], 3, 100000, 1, 32)
 }
 
+// HKDF is the struct type for performing HKDF operations.
 type HKDF struct {
 	PRK []byte
 }
 
+// Hash returns a blake2b hash object.
 func (h *HKDF) Hash() hash.Hash {
 	h1, err := blake2b.New512(nil)
 	if err != nil {
@@ -43,12 +48,15 @@ func (h *HKDF) Hash() hash.Hash {
 	return h1
 }
 
+// NewHKDF creates a new HDKF object.
 func NewHKDF(ikm []byte, salt *[32]byte) *HKDF {
 	h := &HKDF{}
 	h.PRK = hkdf.Extract(h.Hash, ikm, salt[:])
 	return h
 }
 
+// Expand performs the HDFK Expand operation
+// and returns the HKDF output.
 func (h *HKDF) Expand(info []byte, length int) []byte {
 	r := hkdf.Expand(h.Hash, h.PRK, info)
 	out := make([]byte, length)
@@ -62,8 +70,13 @@ func (h *HKDF) Expand(info []byte, length int) []byte {
 	return out
 }
 
+// KeySize is the key size used with the following AeadEcbEncrypt and AeadEcbDecrypt functions.
 const KeySize = 32
 
+// AeadEcbEncrypt encrypts a uniformly random bit string with AES in ECB mode.
+// Normaly ECB mode is an unreasonable choice. In REUNION we are using ECB mode for a very
+// narrow purpose of encrypting a uniformly random bit string. We do not want
+// integrity protection as it provides a distinguisher for offline brute force.
 func AeadEcbEncrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	cipher, err := aes.NewCipher(key[:])
 	if err != nil {
@@ -77,6 +90,10 @@ func AeadEcbEncrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	return encrypted
 }
 
+// AeadEcbDecrypt decrypts an AES ciphertext in ECB mode. It should contain a uniformly random
+// bit string that if successfully decrypted is an Elligator encoded X25519
+// public key, and if it is unsuccessful then the contents will also be treated
+// as an Elligator encoded X25519 public key.
 func AeadEcbDecrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 	cipher, err := aes.NewCipher(key[:])
 	if err != nil {
@@ -92,6 +109,8 @@ func AeadEcbDecrypt(key, mesg *[KeySize]byte) *[KeySize]byte {
 
 const aeadMacSize = 16
 
+// AeadEncrypt encrypts a message and authenticate additional data using a cryptographic key
+// with ChaCha20Poly1305 or panic.
 func AeadEncrypt(key, mesg, ad []byte) []byte {
 	cipher, err := chacha20poly1305.NewX(key)
 	if err != nil {
@@ -103,6 +122,9 @@ func AeadEncrypt(key, mesg, ad []byte) []byte {
 	return append(tag, ciphertext...)
 }
 
+// AeadDecrypt decrypts a message and authenticate additional data using a cryptographic key
+// with ChaCha20Poly1305 or panic. Returns a two-tuple of nil and false or the
+// plaintext and true.
 func AeadDecrypt(key, ct, ad []byte) ([]byte, bool) {
 	cipher, err := chacha20poly1305.NewX(key)
 	if err != nil {
@@ -118,12 +140,15 @@ func AeadDecrypt(key, ct, ad []byte) ([]byte, bool) {
 	return ret, true
 }
 
+// Unelligator maps a uniformly random bit string into a normal X25519 point on the curve.
 func Unelligator(hidden *[KeySize]byte) *[32]byte {
 	curve := &[KeySize]byte{}
 	C.crypto_elligator_map((*C.uint8_t)(unsafe.Pointer(&curve[0])), (*C.uint8_t)(unsafe.Pointer(&hidden[0])))
 	return curve
 }
 
+// GenerateHiddenKeyPair generates a public and secret keypair for X25519 where the public keypair is
+// encoded with Elligator to ensure it is a uniformly random bit string.
 func GenerateHiddenKeyPair(seed *[KeySize]byte) (*[KeySize]byte, *[KeySize]byte) {
 	pkraw := make([]byte, KeySize)
 	skraw := make([]byte, KeySize)
@@ -137,6 +162,8 @@ func GenerateHiddenKeyPair(seed *[KeySize]byte) (*[KeySize]byte, *[KeySize]byte)
 	return pk, sk
 }
 
+// HighCtidhDeterministicRNG generates a deterministic stream of cryptographically secure bytes for use
+// with highctidh's key generation process.
 func HighCtidhDeterministicRNG(seed []byte) func(buf []byte, context uint64) {
 	if len(seed) < 32 {
 		panic("deterministic seed should be at least 256 bits")
