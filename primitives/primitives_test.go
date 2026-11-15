@@ -149,6 +149,9 @@ func TestCTIDHDeterministicRNG(t *testing.T) {
 	detRng := HighCtidhDeterministicRNG(seed)
 	outBuf := make([]byte, 256)
 	detRng(outBuf, context)
+	require.NotEqual(t, make([]byte, 256), outBuf)
 
-	t.Logf("outBuf %x", outBuf)
+	outBuf2 := make([]byte, 256)
+	HighCtidhDeterministicRNG(seed)(outBuf2, context)
+	require.Equal(t, outBuf, outBuf2)
 }

@@ -47,6 +47,7 @@ func TestT1Encoding(t *testing.T) {
 	f := new(T1)
 	err = f.UnmarshalBinary(blob)
 	require.NoError(t, err)
+	require.Equal(t, g, f)
 }
 
 func TestDeterministicSession(t *testing.T) {
